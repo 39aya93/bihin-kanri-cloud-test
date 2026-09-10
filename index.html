@@ -23,8 +23,8 @@
     <button class="secondary" onclick="showAllItems()">📋 一覧を見る</button>
   </div>
   <div class="search-box">
-    <input id="searchInput" type="search" placeholder="名称・仕様・場所・購入先・備考で検索">
-    <button class="primary" onclick="refreshList()"></button>
+    <input id="searchInput" type="search" placeholder="名称・仕様・場・購入先・備考で検索">
+    <button class="primary" onclick="refreshList()">🔎</button>
   </div>
   <div class="filter-row">
     <button id="filterAll" class="secondary active-filter" onclick="setImageFilter('all')">すべて</button>
@@ -72,7 +72,7 @@
 </div></section>
 
 <section id="userScreen" class="hidden"><div class="card">
-<h2> DB利用者を追加</h2>
+<h2>👥 DB利用者を追加</h2>
 <div class="info-box">あとからGoogleアカウントを追加できます。追加したユーザーは、そのDBのスプレッドシート編集者として登録され、DBアプリも利用できるようになります。</div>
 <label class="form-group"><b>DB</b><select id="userDbSelect" onchange="showDbUsers()"><option value="">DBを選択してください</option></select></label>
 <div id="currentDbUsers" class="small" style="margin-bottom:14px"></div>
@@ -101,7 +101,7 @@
 
 <section id="maintenanceScreen" class="hidden"><div class="card">
 <h2>⚙️ 候補リストを管理</h2>
-<div class="info-box">ここで削除するのは「候補」だけです。登録済み備品の保管場所・購入先のデータは変更しません。</div>
+<div class="info-box">ここで削除するのは「候補」だけです。登録済み備品の保管場所・購入先のデータ変しません。</div>
 <h3>保管場所</h3><div id="locationMaintenance"></div><button class="primary full" onclick="addLocationFromSettings()">＋ 保管場所を追加</button>
 <hr><h3>購入先</h3><div id="storeMaintenance"></div><button class="primary full" onclick="addStoreFromSettings()">＋ 購入先を追加</button>
 <br><br><button class="secondary full" onclick="showHome()">戻る</button>
@@ -152,7 +152,7 @@ async function refreshDbList(){
   }catch(err){
     if(err.message&&err.message.includes('Google側からの応答がありません')){
       if(confirm('DB管理GASへ接続に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ページを開きますか？（一度だけ必要です）')){openManagerAuth();}
-    }else{alert('DB一を更新できませんでした。\n\n'+err.message);}
+    }else{alert('DB一覧を更新できませんでした。\n\n'+err.message);}
     throw err;
   }
 }
@@ -161,15 +161,60 @@ function openDbSelector(){hideAllScreens();$('dbScreen').classList.remove('hidde
 function openUserManager(){hideAllScreens();$('userScreen').classList.remove('hidden');refreshUserDbSelector();}
 function refreshUserDbSelector(){const s=$('userDbSelect');const list=getDbList().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'ja'));s.innerHTML='<option value="">DBを選択してください</option>';list.forEach(x=>{const o=document.createElement('option');o.value=x.spreadsheetId;o.textContent=x.name;s.appendChild(o);});if(activeDb)s.value=activeDb.spreadsheetId;showDbUsers();}
 function showDbUsers(){const id=$('userDbSelect').value;const box=$('currentDbUsers');if(!id){box.textContent='';return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){box.textContent='';return;}const users=(String(db.editors||'').split(',').map(x=>x.trim()).filter(Boolean));box.innerHTML='<b>現在の利用者</b><br>'+(users.length?users.map(escapeHtml).join('<br>'):'追加ユーザーはいません');}
-async function addDbUser(){const id=$('userDbSelect').value;const email=$('userEmail').value.trim().toLowerCase();if(!id){alert('DBを選択してください。');return;}if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Googleアカウントのメールアドレスを正しく入力してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){alert('DBが見つかりません。');return;}if(!confirm('「'+email+'」をDB「'+db.name+'」の利用者として追加しますか？\n\nスプレッドシートの共有設定とDBアプリの利用権限を更新します。'))return;try{const result=await managerGet('addUser',{spreadsheetId:id,email:email});if(!result.ok)throw new Error(result.error||'利用者の追加に失敗しました。');const list=getDbList().map(x=>x.spreadsheetId===id?result.database:x);setDbList(list);$('userEmail').value='';refreshUserDbSelector();alert('利用者を追加しました。\n\n'+email+'\n\n追加したユーザーには、GoogleアカウントでDBアプリを開いてもらってください。');}catch(err){alert('利用者の追加に失敗しました。\n\n'+err.message);}}
+async function addDbUser(){const id=$('userDbSelect').value;const email=$('userEmail').value.trim().toLowerCase();if(!id){alert('DBを選択してください。');return;}if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Googleアカウントのメールアドレスを正しく入力してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){alert('DBが見つかりません。');return;}if(!confirm('「'+email+'」をDB「'+db.name+'」の利用者として追加しますか？\n\nスプレッドシートの共有設定とDBアプリの利用権限を更新します。'))return;try{const result=await managerGet('addUser',{spreadsheetId:id,email:email});if(!result.ok)throw new Error(result.error||'利用者の追加に失敗しました。');const list=getDbList().map(x=>x.spreadsheetId===id?result.database:x);setDbList(list);$('userEmail').value='';refreshUserDbSelector();alert('利用者を追加しました。\n\n'+email+'\n\n追加したユザーには、GoogleアカウントでDBアプリを開いてもらってください。');}catch(err){alert('利用者の追加に失敗しました。\n\n'+err.message);}}
 
 async function loadSelectedSavedDb(){const id=$('savedDbSelect').value;if(!id){alert('DBを選択してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db)return;if(!confirm('「'+db.name+'」を開きますか？\n\n現在のDBの未保存変更は引き継がれません。'))return;try{await openCloudDb(db);showHome();alert('DBを開きました。\n\n'+db.name);}catch(err){if(err.message&&err.message.includes('Google側からの応答がありません')){if(confirm('DB「'+db.name+'」を開くにはGoogleでの権限承認が必要です。\n\n承認ページを開きますか？\n（承認後、再度「選択したDBを開く」を押してください）')){openDbAuth(db);}}else{alert('DBを開けませんでした。\n\n'+err.message);}}}
 
-async function deleteSelectedDb(){const id=$('savedDbSelect').value;if(!id){alert('DBを選択してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){alert('DBが見つかりません。');return;}if(!confirm('「'+db.name+'」を削除しますか？\n\nGoogleドライブのスプレッドシートもゴミ箱に移動します\nこの操作は元に戻せません。'))return;if(!confirm('もう一度確認します。本当に「'+db.name+'」を削除しますか？'))return;try{const result=await managerGet('delete',{spreadsheetId:id});if(!result.ok)throw new Error(result.error||'DBの削除に失敗しました。');const list=getDbList().filter(x=>x.spreadsheetId!==id);setDbList(list);if(activeDb&&activeDb.spreadsheetId===id){activeDb=null;activeDbName='未選択';localStorage.removeItem(ACTIVE_DB_KEY);}refreshSavedDbSelector();alert('DBを削除しました。\n\n'+db.name);}catch(err){if(err.message&&err.message.includes('Google側からの応答がありません')){if(confirm('DB削除に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ページを開きますか？')){openManagerAuth();}}else{alert('DBの削除に失敗しました。\n\n'+err.message);}}}
+async function deleteSelectedDb(){const id=$('savedDbSelect').value;if(!id){alert('DBを選択してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){alert('DBが見つかりません。');return;}if(!confirm('「'+db.name+'」を削除しますか？\n\nGoogleドライブのスプレッドシートもゴミ箱に移動します。\nこの操作は元に戻せません。'))return;if(!confirm('もう一度確認します。本当に「'+db.name+'」を削除しますか？'))return;try{const result=await managerGet('delete',{spreadsheetId:id});if(!result.ok)throw new Error(result.error||'DBの削除に失敗しました。');const list=getDbList().filter(x=>x.spreadsheetId!==id);setDbList(list);if(activeDb&&activeDb.spreadsheetId===id){activeDb=null;activeDbName='未選択';localStorage.removeItem(ACTIVE_DB_KEY);}refreshSavedDbSelector();alert('DBを削除しました。\n\n'+db.name);}catch(err){if(err.message&&err.message.includes('Google側からの応答がありません')){if(confirm('DB削除に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ページを開きますか？')){openManagerAuth();}}else{alert('DB削除に失敗しました。\n\n'+err.message);}}}
 
 async function openCloudDb(db){const result=await apiGet(db,'all');if(!result.ok)throw new Error(result.error||'DBを読み込めませんでした。');activeDb=db;activeDbName=db.name||result.dbName||'備品管理';APP_CONFIG.ACTIVE_DB_ID=db.spreadsheetId;localStorage.setItem(ACTIVE_DB_KEY,db.spreadsheetId);setSettings(result.settings||{locations:DEFAULT_LOCATIONS,stores:DEFAULT_STORES});await localClear();for(const item of result.items||[])await localPut(item);updateDbName();refreshLocationList();refreshStoreList();await refreshList();}
 
-async function newDatabase(){if(APP_CONFIG.MANAGER_URL&&!localStorage.getItem('managerAuthorized')){const msg='DB管理機能を利用するには、Googleアカウントで承認が必要です。\n\n承認ページを開きますか？（一度だけ必要です）\n※承認後、この画面に戻って再度「＋新しいDB」を押してください。';if(confirm(msg)){openManagerAuth();localStorage.setItem('managerAuthorized','true');return;}}const name=prompt('新しいDB名を入力してください。\n例：園芸用品、工具、家電');if(name===null)return;const n=name.trim();if(!n)return;const editors=prompt('共同管理するGoogleアカウントのメールアドレスをカンマ区切りで入力してください。\n自分以外に追加する場合だけ入力します。','');if(editors===null)return;if(!confirm('Googleドライブに「'+n+'」のスプレッドシートを作成し、DB用Code.gsを埋め込み、Webアプリとして自動デプロイします。\n\n作成しますか？'))return;try{const result=await managerGet('create',{name:n,editors:editors});if(!result.ok)throw new Error(result.error||'DB作成に失敗');const list=getDbList();list.push(result.database);setDbList(list);if(result.database.webAppUrl){const msg='新しいDB「'+n+'」を作成しました！\n\n初回使用にはGoogleでの権限承認が必要です。\n承認ページを開きますか？\n\n（承認後、このままDBを開きます）';if(confirm(msg)){openDbAuth(result.database);alert('承認ページを開きました。\n\nGoogleアカウントでの承認を完了したら、\n「OK」を押してDBを開きます。');try{await openCloudDb(result.database);showHome();alert('新しいDBを作成・開きました。\n\n'+n);}catch(openErr){if(openErr.message&&openErr.message.includes('Google側からの応答がありません')){alert('承認がまだ完了していないようです。\n\n承認ページで「許可」を押した後、\n「DBを選択」から「'+n+'」を開いてください。');}else{alert('DBを開けませんでした。\n\n'+openErr.message);}}}else{alert('DB「'+n+'」を作成しました。\n\n後で「DBを選択」から開いてください。');}}catch(err){if(err.message&&err.message.includes('Google側からの応答がありません')){if(confirm('DB作成に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ージを開きますか？')){openManagerAuth();}}else{alert('新しいDBの作成に失敗しました。\n\n'+err.message);}}}
+async function newDatabase(){
+  if(APP_CONFIG.MANAGER_URL&&!localStorage.getItem('managerAuthorized')){
+    const msg='DB管理機能を利用するには、Googleアカウントで承認が必要です。\n\n承認ページを開きますか？（一度だけ必要です）\n※承認後、この画面に戻って再度「＋新しいDB」を押してください。';
+    if(confirm(msg)){openManagerAuth();localStorage.setItem('managerAuthorized','true');return;}
+  }
+  const name=prompt('新しいDB名を入力してください。\n例：園芸用品、工具、家電');
+  if(name===null)return;
+  const n=name.trim();
+  if(!n)return;
+  const editors=prompt('共同管理するGoogleアカウントのメールアドレスをカンマ区切りで入力してください。\n自分以外に追加する場合だけ入力します。','');
+  if(editors===null)return;
+  if(!confirm('Googleドライブに「'+n+'」のスプレッドシートを作成し、DB用Code.gsを埋め込み、Webアプリとして自動デプロします。\n\n作成しますか？'))return;
+  try{
+    const result=await managerGet('create',{name:n,editors:editors});
+    if(!result.ok)throw new Error(result.error||'DB作成に失敗');
+    const list=getDbList();
+    list.push(result.database);
+    setDbList(list);
+    if(result.database.webAppUrl){
+      const msg='新しいDB「'+n+'」を作成しました！\n\n初回使用にはGoogleでの権限承認が必要です。\n承認ページを開きますか？\n\n（承認後、このままDBを開きます）';
+      if(confirm(msg)){
+        openDbAuth(result.database);
+        alert('承認ページを開きました。\n\nGoogleアカウントでの承認を完了したら、\n「OK」を押してDBを開きます。');
+        try{
+          await openCloudDb(result.database);
+          showHome();
+          alert('新しいDBを作成・開きました。\n\n'+n);
+        }catch(openErr){
+          if(openErr.message&&openErr.message.includes('Google側からの応答がありません')){
+            alert('承認がまだ完了していないようです。\n\n承認ページで「許可」を押した後、\n「DBを選択」から「'+n+'」を開いてください。');
+          }else{
+            alert('DBを開けませんでした。\n\n'+openErr.message);
+          }
+        }
+      }else{
+        alert('DB「'+n+'」を作成しました。\n\n後で「DBを選択」から開いてください。');
+      }
+    }
+  }catch(err){
+    if(err.message&&err.message.includes('Google側からの応答がありません')){
+      if(confirm('DB作成に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ページを開きますか？')){openManagerAuth();}
+    }else{
+      alert('新しいDBの作成に失敗しました。\n\n'+err.message);
+    }
+  }
+}
 
 function refreshLocationList(selected=''){const s=$('location'),set=getSettings();s.innerHTML='<option value="">選択してください</option>';set.locations.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);});if(selected&&!set.locations.includes(selected)){const o=document.createElement('option');o.value=selected;o.textContent=selected;s.appendChild(o);}s.value=selected||'';}
 function refreshStoreList(selected=''){const s=$('store'),set=getSettings();s.innerHTML='<option value="">選択してください</option>';set.stores.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);});if(selected&&!set.stores.includes(selected)){const o=document.createElement('option');o.value=selected;o.textContent=selected;s.appendChild(o);}s.value=selected||'';}
@@ -187,9 +232,9 @@ function clearForm(){['name','spec','quantity','obtained','expiry','price','memo
 function takePhoto(){$('cameraInput').click();}
 function selectPhoto(){$('fileInput').click();}
 function handleImage(e){const f=e.target.files[0];if(!f)return;if(!f.type.startsWith('image/')){alert('画像ファイルを選択してください。');return;}compressImage(f).then(data=>{selectedImageData=data;$('preview').src=data;$('preview').classList.remove('hidden');}).catch(err=>alert('画像処理に失敗しました。\n'+err.message));}
-function compressImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('画像を読み込めません。'));reader.onload=()=>{const img=new Image();img.onload=()=>{const max=1200;let w=img.naturalWidth,h=img.naturalHeight;if(Math.max(w,h)>max){const rate=max/Math.max(w,h);w=Math.round(w*rate);h=Math.round(h*rate);}const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.72));};img.onerror=()=>reject(new Error('画像を表できません。'));img.src=reader.result;};reader.readAsDataURL(file);});}
+function compressImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('画像を読み込めません。'));reader.onload=()=>{const img=new Image();img.onload=()=>{const max=1200;let w=img.naturalWidth,h=img.naturalHeight;if(Math.max(w,h)>max){const rate=max/Math.max(w,h);w=Math.round(w*rate);h=Math.round(h*rate);}const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.72));};img.onerror=()=>reject(new Error('画像を表示できません。'));img.src=reader.result;};reader.readAsDataURL(file);});}
 $('cameraInput').addEventListener('change',handleImage);$('fileInput').addEventListener('change',handleImage);
-async function saveItem(){if(!activeDb){alert('先にDBを選択してください。');return;}const name=$('name').value.trim();if(!name){alert('名称を入力してください。');return;}const now=new Date().toISOString();let item;if(editingId){item=await localGet(editingId);if(!item)return;item={...item,name:name,spec:$('spec').value.trim(),quantity:$('quantity').value,image:selectedImageData===null?item.image||'':selectedImageData,location:$('location').value,obtained:$('obtained').value,expiry:$('expiry').value,store:$('store').value,price:$('price').value,memo:$('memo').value.trim(),updatedAt:now};}else{item={id:createId(),name:name,spec:$('spec').value.trim(),quantity:$('quantity').value,image:selectedImageData||'',location:$('location').value,obtained:$('obtained').value,expiry:$('expiry').value,store:$('store').value,price:$('price').value,memo:$('memo').value.trim(),createdAt:now,updatedAt:now};}const s=getSettings();if(item.location&&!s.locations.includes(item.location))s.locations.push(item.location);if(item.store&&!s.stores.includes(item.store))s.stores.push(item.store);setSettings(s);try{await apiPost(activeDb,{action:'saveItem',item:item});await localPut(item);alert(editingId?'変更を保存しました。':'登録しました。');showDetail(item.id);}catch(err){alert('クラウド保存に失敗しました。\n\n'+err.message);}}
+async function saveItem(){if(!activeDb){alert('先にDBを選択してください。');return;}const name=$('name').value.trim();if(!name){alert('名称を入力してください。');return;}const now=new Date().toISOString();let item;if(editingId){item=await localGet(editingId);if(!item)return;item={...item,name:name,spec:$('spec').value.trim(),quantity:$('quantity').value,image:selectedImageData===null?item.image||'':selectedImageData,location:$('location').value,obtained:$('obtained').value,expiry:$('expiry').value,store:$('store').value,price:$('price').value,memo:$('memo').value.trim(),updatedAt:now};}else{item={id:createId(),name:name,spec:$('spec').value.trim(),quantity:$('quantity').value,image:selectedImageData||'',location:$('location').value,obtained:$('obtained').value,expiry:$('expiry').value,store:$('store').value,price:$('price').value,memo:$('memo').value.trim(),createdAt:now,updatedAt:now};}const s=getSettings();if(item.location&&!s.locations.includes(item.location))s.locations.push(item.location);if(item.store&&!s.stores.includes(item.store))s.stores.push(item.store);setSettings(s);try{await apiPost(activeDb,{action:'saveItem',item:item});await localPut(item);alert(editingId?'変更を保存しました。':'登録しました。');showDetail(item.id);}catch(err){alert('クラウド保存に失敗しまし。\n\n'+err.message);}}
 async function editItem(id){const item=await localGet(id);if(!item)return;editingId=id;selectedImageData=null;hideAllScreens();$('formScreen').classList.remove('hidden');$('formTitle').textContent='備品を編集';$('name').value=item.name||'';$('spec').value=item.spec||'';$('quantity').value=item.quantity??'';$('obtained').value=item.obtained||'';$('expiry').value=item.expiry||'';$('price').value=item.price||'';$('memo').value=item.memo||'';$('cameraInput').value='';$('fileInput').value='';refreshLocationList(item.location||'');refreshStoreList(item.store||'');if(item.image){$('preview').src=item.image;$('preview').classList.remove('hidden');}else $('preview').classList.add('hidden');}
 function editCurrentItem(){if(currentItemId)editItem(currentItemId);}
 async function showDetail(id){const item=await localGet(id);if(!item)return;currentItemId=id;hideAllScreens();$('detailScreen').classList.remove('hidden');const c=$('detailContent');c.innerHTML='';if(item.image){const im=document.createElement('img');im.className='detail-image';im.src=item.image;im.alt=item.name||'';c.appendChild(im);}addDetail(c,'名称',item.name);addDetail(c,'仕様（サイズ）',item.spec);addDetail(c,'個数',item.quantity);addDetail(c,'保管場所',item.location);addDetail(c,'入手時期',item.obtained);const er=addDetail(c,'保管期限',item.expiry);if(item.expiry)setExpiryClass(er.querySelector('.detail-value'),item.expiry);addDetail(c,'購入先',item.store);addDetail(c,'価格',item.price?Number(item.price).toLocaleString()+' 円':'');addDetail(c,'備考',item.memo);}
@@ -199,12 +244,12 @@ async function deleteCurrentItem(){if(!currentItemId||!activeDb)return;const ite
 async function showMaintenance(){hideAllScreens();$('maintenanceScreen').classList.remove('hidden');const s=getSettings(),items=await localGetAll();renderSettingList('locationMaintenance',s.locations,'location',items);renderSettingList('storeMaintenance',s.stores,'store',items);}
 function renderSettingList(id,list,type,items){const c=$(id);c.innerHTML='';list.forEach((v,i)=>{const count=items.filter(x=>(x[type]||'')===v).length;const row=document.createElement('div');row.className='setting-row';const label=document.createElement('div');label.innerHTML='<b>'+escapeHtml(v)+'</b>'+(count?'<div class="setting-used">登録済み '+count+'件で使用中</div>':'');const b=document.createElement('button');b.className='danger';b.textContent='削除';b.onclick=()=>removeCandidate(type,i,v,count);row.append(label,b);c.appendChild(row);});}
 function escapeHtml(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML;}
-async function removeCandidate(type,index,value,count){const label=type==='location'?'保管場所':'購入先';if(count){if(!confirm('「'+value+'」は登録済み '+count+'件で使用中です。\n\n候補から削除しますか？\n\n※登録済みデータは変更されません。'))return;if(!confirm('もう一度確認しま。\n「'+value+'」を候補から削除しますか？'))return;}else if(!confirm('「'+value+'」を候補から削除しますか？'))return;const s=getSettings(),arr=type==='location'?s.locations:s.stores;arr.splice(index,1);setSettings(s);await saveCloudSettings();await showMaintenance();alert(label+'の候補を削除しました。');}
+async function removeCandidate(type,index,value,count){const label=type==='location'?'保管場所':'購入先';if(count){if(!confirm('「'+value+'」は登録済み '+count+'件で使用中です。\n\n候補から削除しますか？\n\n※登録済みデータは変更されません。'))return;if(!confirm('もう一度確認します。\n「'+value+'」を候補から削除しますか？'))return;}else if(!confirm('「'+value+'」を候補から削除しますか？'))return;const s=getSettings(),arr=type==='location'?s.locations:s.stores;arr.splice(index,1);setSettings(s);await saveCloudSettings();await showMaintenance();alert(label+'の候補を削除しました。');}
 function addLocationFromSettings(){addCandidate('location');}
 function addStoreFromSettings(){addCandidate('store');}
 async function addCandidate(type){const label=type==='location'?'保管場所':'購入先';const v=prompt('追加する'+label+'を入力してください。');if(v===null)return;const n=v.trim();if(!n)return;const s=getSettings(),arr=type==='location'?s.locations:s.stores;if(arr.includes(n)){alert('すでに登録されています。');return;}arr.push(n);setSettings(s);await saveCloudSettings();await showMaintenance();}
 
-async function saveCurrentDb(){if(!activeDb){alert('先にDBを選択してください。');return;}const items=await localGetAll();try{await apiPost(activeDb,{action:'saveAll',items:items,settings:getSettings()});alert('「'+activeDbName+'」をクラウドDBへ保存しまた。\n\n共有している人からも同じDBを利用できます。');}catch(err){alert('DB保存に失敗しました。\n'+err.message);}}
+async function saveCurrentDb(){if(!activeDb){alert('先にDBを選択してださい。');return;}const items=await localGetAll();try{await apiPost(activeDb,{action:'saveAll',items:items,settings:getSettings()});alert('「'+activeDbName+'」をクラウドDBへ保存しました。\n\n共有している人からも同じDBを利用できます。');}catch(err){alert('DB保存に失敗しました。\n'+err.message);}}
 async function exportBackup(){const items=await localGetAll();const data={formatVersion:5,dbName:activeDbName,exportedAt:new Date().toISOString(),settings:getSettings(),items:items};downloadJson(data,activeDbName+'_DB_'+today()+'.json');}
 function downloadJson(data,name){const blob=new Blob([JSON.stringify(data)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function today(){return new Date().toISOString().slice(0,10);}
@@ -214,7 +259,7 @@ async function clearCache(){if(!confirm('PWAのキャッシュをクリアして
 function showAllItems(){showHome();$('searchInput').value='';refreshList();}
 
 async function init(){await openLocalDb();const savedId=localStorage.getItem(ACTIVE_DB_KEY);let list=getDbList();if(APP_CONFIG.MANAGER_URL){try{list=await refreshDbList();}catch(e){}}if(savedId){const db=list.find(x=>x.spreadsheetId===savedId);if(db){try{await openCloudDb(db);}catch(err){console.warn(err);activeDb=db;activeDbName=db.name||'未選択';}}}updateDbName();refreshLocationList();refreshStoreList();await refreshList();}
-init().catch(err=>{console.error(err);alert('アリ初期化エラー：'+err.message);});
+init().catch(err=>{console.error(err);alert('アプリ初期化エラー：'+err.message);});
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=cloud1').catch(console.log));
 </script>
 </body></html>
