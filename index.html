@@ -24,7 +24,7 @@
     <div class="small" style="margin-top:6px;margin-bottom:8px">保存すると「DBを選択」から呼び出せます。</div>
     <button class="secondary full" onclick="refreshDbList()">🔄 DB一覧をGoogleから更新</button>
     <button class="secondary full" onclick="openUserManager()">👥 DB利用者を追加</button>
-    <div class="small" style="margin-top:6px">DBはGoogleスプレッドシートで共有されます。複数人で同じDBを利用できます。</div>
+    <div class="small" style="margin-top:6px">DBはGoogleスプレッドシートで共有されま。複数人で同じDBを利用できます。</div>
     <button class="secondary full" onclick="showMaintenance()">⚙️ 候補リストを管理</button>
   </div>
 
@@ -72,7 +72,7 @@
 <section id="userScreen" class="hidden"><div class="card">
 <h2>👥 DB利用者を追加</h2>
 <div class="info-box">あとからGoogleアカウントを追加できます。追加したユーザーは、そのDBのスプレッドシート編集者として登録され、DBアプリも利用できるようになります。</div>
-<label class="form-group"><b>DB</b><select id="userDbSelect" onchange="showDbUsers()"><option value="">DBを選択してください</option></select></label>
+<label class="form-group"><b>DB</b><select id="userDbSelect" onchange="showDbUsers()"><option value="">DBを択してください</option></select></label>
 <div id="currentDbUsers" class="small" style="margin-bottom:14px"></div>
 <label class="form-group"><b>追加するGoogleアカウント</b><input id="userEmail" type="email" placeholder="example@gmail.com" autocomplete="email"></label>
 <button class="primary full" onclick="addDbUser()">＋ このDBに利用者を追加</button>
@@ -105,7 +105,7 @@
 <br><br><button class="secondary full" onclick="showHome()">戻る</button>
 </div></section>
 </main>
-<script src="config.js?v=2"></script>
+<script src="config.js"></script>
 <script>
 const LOCAL_DB='BihinKanriLocalCache', LOCAL_DB_VERSION=2, ITEMS_STORE='items';
 const SETTINGS_KEY='BihinKanriCloudSettings', ACTIVE_DB_KEY='BihinKanriCloudActive';
@@ -187,17 +187,72 @@ async function addDbUser(){
     alert('利用者を追加しました。\n\n'+email+'\n\n追加したユーザーには、GoogleアカウントでDBアプリを開いてもらってください。');
   }catch(err){alert('利用者の追加に失敗しました。\n\n'+err.message)}
 }
-async function loadSelectedSavedDb(){const id=$('savedDbSelect').value;if(!id){alert('DBを選択してください。');return}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db)return;if(!confirm('「'+db.name+'」を開きますか？\n\n現在のDBの未保存変更は引き継がれません。'))return;await openCloudDb(db);showHome();alert('DBを開きました。\n\n'+db.name)}
-async function openCloudDb(db){const result=await apiGet(db,'all');if(!result.ok)throw new Error(result.error||'DBを読み込めませんでした。');activeDb=db;activeDbName=db.name||result.dbName||'備品管理';APP_CONFIG.ACTIVE_DB_ID=db.spreadsheetId;localStorage.setItem(ACTIVE_DB_KEY,db.spreadsheetId);setSettings(result.settings||{locations:DEFAULT_LOCATIONS,stores:DEFAULT_STORES});await localClear();for(const item of result.items||[])await localPut(item);updateDbName();refreshLocationList();refreshStoreList();await refreshList()}
+
+async function loadSelectedSavedDb(){
+  const id=$('savedDbSelect').value;
+  if(!id){alert('DBを選択してください。');return}
+  const db=getDbList().find(x=>x.spreadsheetId===id);
+  if(!db)return;
+  if(!confirm('「'+db.name+'」を開きますか？\n\n現在のDBの未保存変更は引き継がれません。'))return;
+
+  // 追加: 初回承認ガイダンス
+  if(db.webAppUrl && !db.authorized){
+    const msg = 'DB「'+db.name+'」を初めて開く場合、Googleでの権限承認が必要です。\n'+
+      '承認ページを開きますか？（承認後、再度「DBを選択」してください）';
+    if(confirm(msg)){
+      window.open(db.webAppUrl+'?op=all', '_blank');
+      // DB一覧に承認済みフラグを付ける
+      const list = getDbList().map(x => x.spreadsheetId === id ? {...x, authorized: true} : x);
+      setDbList(list);
+      return; // 承認後は一旦戻る
+    }
+  }
+
+  await openCloudDb(db);
+  showHome();
+  alert('DBを開きました。\n\n'+db.name);
+}
+
+async function openCloudDb(db){
+  const result=await apiGet(db,'all');
+  if(!result.ok)throw new Error(result.error||'DBを読み込めませんでした。');
+  activeDb=db;
+  activeDbName=db.name||result.dbName||'備品管理';
+  APP_CONFIG.ACTIVE_DB_ID=db.spreadsheetId;
+  localStorage.setItem(ACTIVE_DB_KEY,db.spreadsheetId);
+  setSettings(result.settings||{locations:DEFAULT_LOCATIONS,stores:DEFAULT_STORES});
+  await localClear();
+  for(const item of result.items||[])await localPut(item);
+  updateDbName();refreshLocationList();refreshStoreList();await refreshList()
+}
+
 async function newDatabase(){
   const name=prompt('新しいDB名を入力してください。\n例：園芸用品、工具、家電');if(name===null)return;const n=name.trim();if(!n)return;
   const editors=prompt('共同管理するGoogleアカウントのメールアドレスをカンマ区切りで入力してください。\n自分以外に追加する場合だけ入力します。','');if(editors===null)return;
   if(!confirm('Googleドライブに「'+n+'」のスプレッドシートを作成し、DB用Code.gsを埋め込み、Webアプリとして自動デプロイします。\n\n作成しますか？'))return;
-  try{const result=await managerGet('create',{name:n,editors:editors});if(!result.ok)throw new Error(result.error||'DB作成に失敗');const list=getDbList();list.push(result.database);setDbList(list);await openCloudDb(result.database);showHome();alert('新しいDBを作成しました。\n\nスプレッドシートとCode.gsの配置、Webアプリのデプロイまで完了しています。')}catch(err){alert('新しいDBの作成に失敗しました。\n\n'+err.message)}
+  try{
+    const result=await managerGet('create',{name:n,editors:editors});
+    if(!result.ok)throw new Error(result.error||'DB作成に失敗');
+    const list=getDbList();list.push(result.database);setDbList(list);
+
+    // 追加: 承認ガイダンスを表示
+    if(result.database.webAppUrl){
+      const msg = '新しいDB「'+n+'」を作成しました！\n\n'+
+        '初回使用時にGoogleでの権限承認が必要です。\n'+
+        '承認ページを開きますか？';
+      if(confirm(msg)){
+        window.open(result.database.webAppUrl+'?op=all', '_blank');
+      }
+    }
+
+    await openCloudDb(result.database);
+    showHome();
+    alert('新しいDBを作成しました。\n\nスプレッドシートとCode.gsの配置、Webアプリのデプロイまで完了しています。');
+  }catch(err){alert('新しいDBの作成に失敗しました。\n\n'+err.message)}
 }
 
 function refreshLocationList(selected=''){const s=$('location'),set=getSettings();s.innerHTML='<option value="">選択してください</option>';set.locations.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o)});if(selected&&!set.locations.includes(selected)){const o=document.createElement('option');o.value=selected;o.textContent=selected;s.appendChild(o)}s.value=selected||''}
-function refreshStoreList(selected=''){const s=$('store'),set=getSettings();s.innerHTML='<option value="">選択してください</option>';set.stores.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o)});if(selected&&!set.stores.includes(selected)){const o=document.createElement('option');o.value=selected;o.textContent=selected;s.appendChild(o)}s.value=selected||''}
+function refreshStoreList(selected=''){const s=$('store'),set=getSettings();s.innerHTML='<option value="">選択してださい</option>';set.stores.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o)});if(selected&&!set.stores.includes(selected)){const o=document.createElement('option');o.value=selected;o.textContent=selected;s.appendChild(o)}s.value=selected||''}
 async function addLocation(){const v=prompt('追加する保管場所を入力してください。');if(v===null)return;const n=v.trim();if(!n)return;const s=getSettings();if(!s.locations.includes(n))s.locations.push(n);setSettings(s);refreshLocationList(n);await saveCloudSettings()}
 async function addStore(){const v=prompt('追加する購入先を入力してください。');if(v===null)return;const n=v.trim();if(!n)return;const s=getSettings();if(!s.stores.includes(n))s.stores.push(n);setSettings(s);refreshStoreList(n);await saveCloudSettings()}
 async function saveCloudSettings(){if(!activeDb)return;try{await apiPost(activeDb,{action:'saveSettings',settings:getSettings()})}catch(err){alert('候補リストのクラウド保存に失敗しました。\n'+err.message)}}
