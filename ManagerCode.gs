@@ -1,25 +1,10 @@
 /**
  * 備品管理：DB管理用 Apps Script
- *
- * 役割
- *  - 新しいGoogleスプレッドシートを作成
- *  - そのスプレッドシートにCode.gsをバインド
- *  - Apps Script APIでCode.gsを埋め込み
- *  - バージョン作成→Webアプリとしてデプロイ
- *  - DB名、Spreadsheet ID、WebアプリURLを管理
- *
- * 初回設定
- *  1. このコードを「DB管理」というApps Scriptプロジェクトに貼る
- *  2. appsscript.json の oauthScopes を設定
- *  3. Apps Script APIをGoogle Cloudプロジェクトで有効化
- *  4. 初回だけ setupManager() を実行して認証
- *  5. Webアプリとしてデプロイ（自分として実行／ログインユーザー全員）
  */
 
 const MANAGER_SHEET_NAME = 'DB管理台帳';
 const DEFAULT_LOCATIONS = ['工具棚A','工具棚B','ガレージ','物置','パントリー','倉庫','車庫'];
 const DEFAULT_STORES = ['カインズ','コーナン','Amazon','楽天市場','モノタロウ','その他'];
-// DB管理用Webアプリを使えるGoogleアカウント。空配列なら制限なし。
 const ALLOWED_MANAGER_USERS = [];
 
 function assertManagerUser_() {
@@ -58,6 +43,16 @@ function doGet(e) {
       if (!name) throw new Error('DB名がありません。');
       const editors = String(p.editors || '').split(',').map(x=>x.trim()).filter(Boolean);
       result = {ok:true, database:createDatabase_(name, editors)};
+    } else if (op === 'delete') {
+      const spreadsheetId = String(p.spreadsheetId || '').trim();
+      if (!spreadsheetId) throw new Error('DBが指定されていません。');
+      result = {ok:true, deleted:deleteDatabase_(spreadsheetId)};
+    } else if (op === 'addUser') {
+      const spreadsheetId = String(p.spreadsheetId || '').trim();
+      const email = String(p.email || '').trim().toLowerCase();
+      if (!spreadsheetId) throw new Error('DBが指定されていません。');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Googleアカウントのメールアドレスを正しく入力してください。');
+      result = {ok:true, database:addUserToDatabase_(spreadsheetId, email)};
     } else if (op === 'health') result = {ok:true, service:'BihinKanri DB Manager',time:new Date().toISOString()};
     else throw new Error('不明な操作です: '+op);
   } catch (err) {
@@ -96,12 +91,103 @@ function createDatabase_(name, editors) {
   apiUpdateContent_(project.scriptId, getDbCodeTemplate_(allowedUsers), name);
   const version = apiCreateVersion_(project.scriptId, '初期DB版');
   const deployment = apiCreateDeployment_(project.scriptId, version.versionNumber, name);
-  const webAppUrl = deployment.entryPoints && deployment.entryPoints[0] && deployment.entryPoints[0].webApp
-    ? deployment.entryPoints[0].webApp.url : '';
+
+  let webAppUrl = '';
+  if (deployment.entryPoints && deployment.entryPoints[0] && deployment.entryPoints[0].webApp) {
+    webAppUrl = deployment.entryPoints[0].webApp.url || '';
+  }
+  if (!webAppUrl && deployment.deploymentId) {
+    webAppUrl = 'https://script.google.com/macros/s/' + deployment.deploymentId + '/exec';
+  }
 
   const reg = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID')).getSheetByName(MANAGER_SHEET_NAME);
   reg.appendRow([name,spreadsheetId,ss.getUrl(),project.scriptId,webAppUrl,editors.join(','),new Date()]);
   return {name,spreadsheetId,spreadsheetUrl:ss.getUrl(),scriptId:project.scriptId,webAppUrl,editors};
+}
+
+function deleteDatabase_(spreadsheetId) {
+  setupManager();
+  const regSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID'));
+  const reg = regSs.getSheetByName(MANAGER_SHEET_NAME);
+  const values = reg.getDataRange().getValues();
+  let row = -1;
+  for (let i=1;i<values.length;i++) {
+    if (String(values[i][1] || '') === spreadsheetId) {
+      row = i + 1;
+      break;
+    }
+  }
+  if (row < 0) throw new Error('指定されたDBがDB管理台帳に見つかりません。');
+
+  // スプレッドシートをゴミ箱に移動
+  try {
+    DriveApp.getFileById(spreadsheetId).setTrashed(true);
+  } catch(err) {}
+
+  // 台帳から削除
+  reg.deleteRow(row);
+  return true;
+}
+
+function addUserToDatabase_(spreadsheetId, email) {
+  setupManager();
+  const regSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID'));
+  const reg = regSs.getSheetByName(MANAGER_SHEET_NAME);
+  const values = reg.getDataRange().getValues();
+  let row = -1;
+  let record = null;
+  for (let i=1;i<values.length;i++) {
+    if (String(values[i][1] || '') === spreadsheetId) {
+      row = i + 1;
+      record = {
+        name:String(values[i][0] || ''),
+        scriptId:String(values[i][3] || ''),
+        webAppUrl:String(values[i][4] || ''),
+        editors:String(values[i][5] || '')
+      };
+      break;
+    }
+  }
+  if (row < 0 || !record) throw new Error('指定されたDBがDB管理台帳に見つかりません。');
+
+  const currentEditors = record.editors.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
+  const ownerEmail = String(SpreadsheetApp.openById(spreadsheetId).getOwner().getEmail() || '').toLowerCase();
+  if (email === ownerEmail) throw new Error('このメールアドレスはDBの所有者です。追加する必要はありません。');
+  if (currentEditors.includes(email)) throw new Error('このユーザーはすでに追加されています。');
+
+  try {
+    DriveApp.getFileById(spreadsheetId).addEditor(email);
+  } catch (err) {
+    throw new Error('Googleスプレッドシートの共有設定に失敗しました：'+String(err.message || err));
+  }
+
+  const newEditors = currentEditors.concat(email);
+  const allowedUsers = Array.from(new Set([ownerEmail].concat(newEditors).filter(Boolean)));
+
+  if (!record.scriptId) throw new Error('DBのScript IDがありません。');
+  apiUpdateContent_(record.scriptId, getDbCodeTemplate_(allowedUsers), record.name);
+  const version = apiCreateVersion_(record.scriptId, '利用者追加：'+email);
+  const deployment = apiCreateDeployment_(record.scriptId, version.versionNumber, record.name+' 利用者追加');
+
+  let webAppUrl = record.webAppUrl;
+  if (deployment.entryPoints && deployment.entryPoints[0] && deployment.entryPoints[0].webApp) {
+    webAppUrl = deployment.entryPoints[0].webApp.url || record.webAppUrl;
+  }
+  if (!webAppUrl && deployment.deploymentId) {
+    webAppUrl = 'https://script.google.com/macros/s/' + deployment.deploymentId + '/exec';
+  }
+
+  reg.getRange(row, 5).setValue(webAppUrl);
+  reg.getRange(row, 6).setValue(newEditors.join(','));
+
+  return {
+    name:record.name,
+    spreadsheetId:spreadsheetId,
+    spreadsheetUrl:'https://docs.google.com/spreadsheets/d/'+spreadsheetId+'/edit',
+    scriptId:record.scriptId,
+    webAppUrl:webAppUrl,
+    editors:newEditors
+  };
 }
 
 function initializeDatabase_(ss) {
@@ -182,15 +268,22 @@ function output_(obj, prefix) {
 function getDbCodeTemplate_(allowedUsers) {
   return `/**
  * 備品管理：DBごとのスプレッドシートに自動配置されるCode.gs
- * このファイルはDB管理用スクリプトがApps Script APIで各Spreadsheetへコピーします。
  */
 
 const ITEMS_SHEET = 'Items';
 const SETTINGS_SHEET = 'Settings';
 const ITEM_HEADERS = ['id','name','spec','quantity','image','location','obtained','expiry','store','price','memo','createdAt','updatedAt'];
+const ALLOWED_USERS = __ALLOWED_USERS__;
+
+function assertUser_() {
+  const email = String(Session.getActiveUser().getEmail() || '').toLowerCase();
+  if (!email) throw new Error('Googleアカウントを確認できません。DBのWebアプリにはGoogleアカウントでログインしてアクセスしてください。');
+  if (ALLOWED_USERS.length && !ALLOWED_USERS.includes(email)) throw new Error('このDBを利用する権限がありせん：'+email);
+  return email;
+}
 
 function doGet(e) {
-  assertManagerUser_();
+  assertUser_();
   const p = e && e.parameter ? e.parameter : {};
   const op = p.op || 'all';
   let result;
