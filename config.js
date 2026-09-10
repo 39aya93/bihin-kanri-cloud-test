@@ -6,7 +6,7 @@
  *    手動で編集する必要は基本ありません。
  */
 const APP_CONFIG = {
-  MANAGER_URL: 'https://script.google.com/macros/s/AKfycbyV0nMIoA0AwbA-JjOOvvCPGzBwmoPKf9iVqJUmF7p1fTj1KIAx_SRi23gpZPb-1-8/exec',
+  MANAGER_URL: 'https://script.google.com/macros/s/AKfycby7DbPc2qa0UrFgLL0nvH1mD7nNec6vrn9z74Xzj1fGDEh3POZ93UZoS8seAzXYJWU9/exec',
   DB_LIST: [],
   ACTIVE_DB_ID: ''
 };
