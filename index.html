@@ -147,6 +147,7 @@ async function refreshDbList(){
     if(!result.ok)throw new Error(result.error||'DB一覧取得失敗');
     setDbList(result.databases||[]);
     await refreshSavedDbSelector();
+    alert('DB一覧を更新しました。\n\n' + (result.databases||[]).length + '件のDBが見つかりました。');
     return result.databases||[];
   }catch(err){
     if(err.message && err.message.includes('Google側からの応答がありません')){
