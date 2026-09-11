@@ -53,7 +53,17 @@ function doGet(e) {
 function doPost(e) {
   let result;
   try {
-    const payload = e.postData && e.postData.contents ? JSON.parse(e.postData.contents) : {};
+    let payload = {};
+    if (e.postData && e.postData.contents) {
+      const ct = String(e.postData.type || '').toLowerCase();
+      if (ct.includes('json')) {
+        payload = JSON.parse(e.postData.contents);
+      } else {
+        const params = new URLSearchParams(e.postData.contents);
+        const payloadStr = params.get('payload');
+        if (payloadStr) payload = JSON.parse(payloadStr);
+      }
+    }
     const action = payload.action || '';
     const ssId = String(payload.spreadsheetId || '').trim();
 
@@ -72,6 +82,10 @@ function doPost(e) {
     result = {ok:false,error:String(err && err.message ? err.message : err)};
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doOptions(e) {
+  return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT);
 }
 
 function listDatabases_() {
