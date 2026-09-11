@@ -71,7 +71,7 @@
 
   <!-- メニュー -->
   <div class="grid-2">
-    <button class="btn-primary" onclick="showAddForm()">＋ 備品を登録</button>
+    <button class="btn-primary" onclick="showAddForm()">＋ 品を登録</button>
     <button class="btn-outline" onclick="showItemList()">📋 一覧を見る</button>
   </div>
 
@@ -235,7 +235,7 @@
       <button class="close-btn" onclick="closeModal('optionsModal')">&times;</button>
     </div>
     <div class="form-group">
-      <label>保管場所（改行区り）</label>
+      <label>保管場所（改行区切り）</label>
       <textarea id="locationsInput" rows="4"></textarea>
     </div>
     <div class="form-group">
@@ -310,7 +310,7 @@ async function loadDbData() {
     settings = data.settings || {locations:[],stores:[]};
     populateSelects();
   } catch (err) {
-    alert('DB読み込みエラ：' + err.message);
+    alert('DB読み込みエラー：' + err.message);
   }
 }
 function populateSelects() {
@@ -436,8 +436,7 @@ async function saveItem() {
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({action:'saveItem', spreadsheetId:activeDb.spreadsheetId, item})
+      body: new URLSearchParams({payload: JSON.stringify({action:'saveItem', spreadsheetId:activeDb.spreadsheetId, item})})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
@@ -476,8 +475,7 @@ async function deleteItem(id) {
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({action:'deleteItem', spreadsheetId:activeDb.spreadsheetId, id})
+      body: new URLSearchParams({payload: JSON.stringify({action:'deleteItem', spreadsheetId:activeDb.spreadsheetId, id})})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
@@ -523,8 +521,7 @@ async function createDb() {
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({action:'createDb', name, editors})
+      body: new URLSearchParams({payload: JSON.stringify({action:'createDb', name, editors})})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
@@ -542,13 +539,12 @@ async function saveCurrentDb() {
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
+      body: new URLSearchParams({payload: JSON.stringify({
         action:'saveAll',
         spreadsheetId:activeDb.spreadsheetId,
         items,
         settings
-      })
+      })})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
@@ -613,8 +609,7 @@ async function saveOptions() {
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({action:'saveSettings', spreadsheetId:activeDb.spreadsheetId, settings})
+      body: new URLSearchParams({payload: JSON.stringify({action:'saveSettings', spreadsheetId:activeDb.spreadsheetId, settings})})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
