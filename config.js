@@ -6,4 +6,4 @@
  *    手動で編集する必要は基本ありません。
  */
 
-const MANAGER_URL = 'https://script.google.com/macros/s/AKfycbxP2Qd8WeIOHxtgdg7M9bsaKFzpwXuEoGYpjDGTAp_dwbbDz0gRhtRIElJEsjL5U4vx/exec';
+const MANAGER_URL = 'https://script.google.com/macros/s/AKfycbw29vq21NPUu6jOYMGAubBYqGfZ30jIKX9R6UJI5Kq_SjOEFz-hfr5lwJhKIaIG7m92/exec';
