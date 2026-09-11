@@ -120,7 +120,7 @@
         <label>数量<input type="number" id="itemQty" value="1" min="0"></label>
         <label>場所
           <select id="itemLocation"><option value="">選択</option></select>
-          <input id="itemLocationCustom" placeholder="または新しい場所" style="margin-top:.3rem;">
+          <input id="itemLocationCustom" placeholder="または新し場所" style="margin-top:.3rem;">
         </label>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
@@ -172,7 +172,7 @@
 
 <script>
 /* ================= 設定 ================= */
-const MANAGER_URL = (typeof CONFIG !== 'undefined' && CONFIG.MANAGER_URL) ? CONFIG.MANAGER_URL : '';
+var MANAGER_URL = (typeof CONFIG !== 'undefined' && CONFIG.MANAGER_URL) ? CONFIG.MANAGER_URL : '';
 
 /* ================= 状態 ================= */
 let databases = [];
@@ -226,7 +226,7 @@ async function initDbScreen(){
 function renderDbSelector(){
   const grid = $('dbSelectGrid');
   if (!databases.length) {
-    grid.innerHTML = '<p style="color:#94a3b8;">DBがありません。下のボタンから作成しください。</p>';
+    grid.innerHTML = '<p style="color:#94a3b8;">DBがありません。下のボタンから作成してください。</p>';
     return;
   }
   grid.innerHTML = databases.map(db => `
@@ -290,7 +290,7 @@ async function createDb(){
       renderItems();
     }
   } catch (err) {
-    toast('新しいDBの作成に失敗ました。\n' + err.message);
+    toast('新しいDBの作成に失敗しました。\n' + err.message);
   }
 }
 
@@ -430,7 +430,7 @@ function renderItems(){
   container.className = viewMode === 'grid' ? 'item-grid' : 'item-list';
   container.innerHTML = filtered.map(it => `
     <div class="item-card">
-      ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:.8rem;">画像なし</div>`}
+      ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:.8rem;">画なし</div>`}
       <div style="flex:1;">
         <div style="font-weight:700;margin-bottom:.25rem;">${escapeHtml(it.name)}</div>
         <div style="font-size:.8rem;color:#9ca3af;margin-bottom:.35rem;">
