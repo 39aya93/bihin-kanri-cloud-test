@@ -71,7 +71,7 @@
 
   <!-- メニュー -->
   <div class="grid-2">
-    <button class="btn-primary" onclick="showAddForm()">＋ 品を登録</button>
+    <button class="btn-primary" onclick="showAddForm()">＋ 備品を登録</button>
     <button class="btn-outline" onclick="showItemList()">📋 一覧を見る</button>
   </div>
 
@@ -519,10 +519,7 @@ async function createDb() {
   if (!name) { alert('DB名を入力してください。'); return; }
   const editors = document.getElementById('newDbEditors').value.split(',').map(s=>s.trim()).filter(Boolean);
   try {
-    const res = await fetch(MANAGER_URL, {
-      method: 'POST',
-      body: new URLSearchParams({payload: JSON.stringify({action:'createDb', name, editors})})
-    });
+    const res = await fetch(MANAGER_URL + '?op=create&name=' + encodeURIComponent(name) + '&editors=' + encodeURIComponent(editors.join(',')));
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
     await refreshDbList();
