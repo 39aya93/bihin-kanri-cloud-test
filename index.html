@@ -92,7 +92,7 @@
     </div>
   </div>
 
-  <!-- バックアップ・キャッシュ -->
+  <!-- バクアップ・キャッシュ -->
   <div class="card" style="padding:1rem;">
     <button class="outline small" onclick="clearCache()">🧹 キャッシュをクリアして再読み込み</button>
   </div>
@@ -235,7 +235,7 @@
       <button class="close-btn" onclick="closeModal('optionsModal')">&times;</button>
     </div>
     <div class="form-group">
-      <label>保管場所（改行区切り）</label>
+      <label>保管場所（改行区り）</label>
       <textarea id="locationsInput" rows="4"></textarea>
     </div>
     <div class="form-group">
@@ -302,7 +302,6 @@ async function openDb(db) {
 }
 async function loadDbData() {
   if (!activeDb) return;
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL + '?op=all&spreadsheetId=' + encodeURIComponent(activeDb.spreadsheetId));
     const data = await res.json();
@@ -311,9 +310,7 @@ async function loadDbData() {
     settings = data.settings || {locations:[],stores:[]};
     populateSelects();
   } catch (err) {
-    alert('DB読み込みエラー：' + err.message);
-  } finally {
-    showLoading(false);
+    alert('DB読み込みエラ：' + err.message);
   }
 }
 function populateSelects() {
@@ -436,10 +433,10 @@ async function saveItem() {
     updatedAt: new Date().toISOString()
   };
   if (!existing) item.createdAt = item.updatedAt;
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action:'saveItem', spreadsheetId:activeDb.spreadsheetId, item})
     });
     const data = await res.json();
@@ -450,8 +447,6 @@ async function saveItem() {
     closeModal('addFormModal');
   } catch (err) {
     alert('保存エラー：' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 function editItem(id) {
@@ -478,10 +473,10 @@ function editItem(id) {
 }
 async function deleteItem(id) {
   if (!confirm('この備品を削除しますか？')) return;
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action:'deleteItem', spreadsheetId:activeDb.spreadsheetId, id})
     });
     const data = await res.json();
@@ -490,8 +485,6 @@ async function deleteItem(id) {
     renderItems();
   } catch (err) {
     alert('削除エラー：' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 
@@ -507,7 +500,6 @@ async function loadRegistry() {
   }
 }
 async function refreshDbList() {
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL + '?op=list');
     const data = await res.json();
@@ -517,8 +509,6 @@ async function refreshDbList() {
     renderDbList();
   } catch (err) {
     alert('更新エラー：' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 function showCreateDb() {
@@ -530,10 +520,10 @@ async function createDb() {
   const name = document.getElementById('newDbName').value.trim();
   if (!name) { alert('DB名を入力してください。'); return; }
   const editors = document.getElementById('newDbEditors').value.split(',').map(s=>s.trim()).filter(Boolean);
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action:'createDb', name, editors})
     });
     const data = await res.json();
@@ -544,17 +534,15 @@ async function createDb() {
     await openDb(data.database);
   } catch (err) {
     alert('新しいDBの作成に失敗しました。\n\n' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 async function saveCurrentDb() {
   if (!activeDb) { alert('DBが選択されていません。'); return; }
   if (!confirm('クラウドに保存しますか？（現在のDBの内容が上書きされます）')) return;
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         action:'saveAll',
         spreadsheetId:activeDb.spreadsheetId,
@@ -567,8 +555,6 @@ async function saveCurrentDb() {
     alert('保存しました。（'+data.count+'件）');
   } catch (err) {
     alert('保存エラー：' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 function showAddUser() {
@@ -582,7 +568,6 @@ async function addUser() {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     alert('正しいメールアドレスを入力してください。'); return;
   }
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL + '?op=addUser&spreadsheetId=' + encodeURIComponent(activeDb.spreadsheetId) + '&email=' + encodeURIComponent(email));
     const data = await res.json();
@@ -591,15 +576,12 @@ async function addUser() {
     closeModal('addUserModal');
   } catch (err) {
     alert('追加エラー：' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 async function deleteSelectedDb() {
   if (!activeDb) { alert('先にDBを選択してください。'); return; }
   if (!confirm('「'+activeDb.name+'」を削除しますか？\n（スプレッドシートもゴミ箱に移動します）')) return;
   if (!confirm('本当に削除しますか？この操作は元に戻せません。')) return;
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL + '?op=delete&spreadsheetId=' + encodeURIComponent(activeDb.spreadsheetId));
     const data = await res.json();
@@ -614,8 +596,6 @@ async function deleteSelectedDb() {
     await refreshDbList();
   } catch (err) {
     alert('削除エラー：' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 
@@ -630,10 +610,10 @@ async function saveOptions() {
   if (!activeDb) return;
   settings.locations = document.getElementById('locationsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
   settings.stores = document.getElementById('storesInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  showLoading(true);
   try {
     const res = await fetch(MANAGER_URL, {
       method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action:'saveSettings', spreadsheetId:activeDb.spreadsheetId, settings})
     });
     const data = await res.json();
@@ -643,8 +623,6 @@ async function saveOptions() {
     alert('保存しました。');
   } catch (err) {
     alert('保存エラー：' + err.message);
-  } finally {
-    showLoading(false);
   }
 }
 
@@ -652,9 +630,6 @@ async function saveOptions() {
 function clearCache() {
   localStorage.clear();
   location.reload();
-}
-function showLoading(show) {
-  // 必要に応じてローディング表示を実装
 }
 
 /* ===================== ユーティリティ ===================== */
