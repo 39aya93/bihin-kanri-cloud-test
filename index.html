@@ -2,264 +2,672 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#1976d2">
-<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>備品管理</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;background:#f3f4f6;color:#333}header{background:#1976d2;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:10}header h1{margin:0;font-size:20px}main{max-width:700px;margin:auto;padding:12px}button{border:0;border-radius:8px;padding:11px 15px;font-size:15px;cursor:pointer}.primary{background:#1976d2;color:#fff}.secondary{background:#e5e7eb;color:#333}.danger{background:#d32f2f;color:#fff}.full{width:100%}.menu{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.search-box{display:flex;gap:8px;margin-bottom:10px}.search-box input{flex:1}input,select,textarea{width:100%;padding:11px;font-size:16px;border:1px solid #ccc;border-radius:7px;background:#fff}textarea{min-height:90px}.form-group{margin-bottom:14px}.form-group label{display:block;font-weight:bold;margin-bottom:5px}.card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.12)}.item-card{display:flex;gap:12px;cursor:pointer}.item-image{width:90px;height:90px;object-fit:cover;border-radius:7px;background:#eee;flex-shrink:0}.no-image{display:flex;align-items:center;justify-content:center;color:#999;font-size:12px}.item-info{flex:1;min-width:0}.item-name{font-weight:bold;font-size:17px;margin-bottom:5px}.item-location{color:#555;margin-bottom:3px}.expired{color:#d32f2f;font-weight:bold}.expiring{color:#ef6c00;font-weight:bold}.detail-image{width:100%;max-height:350px;object-fit:contain;background:#eee;border-radius:8px;margin-bottom:15px}.detail-row{padding:10px 0;border-bottom:1px solid #eee}.detail-label{font-size:13px;color:#777}.detail-value{font-size:16px;margin-top:3px;white-space:pre-wrap}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}.hidden{display:none!important}.preview{width:100%;max-height:250px;object-fit:contain;margin-top:8px;border-radius:8px;background:#eee}.empty{text-align:center;color:#777;padding:30px 10px}.small{font-size:13px;color:#777}.info-box{background:#eef5ff;border-radius:8px;padding:12px;margin-bottom:12px;font-size:14px}hr{border:0;border-top:1px solid #ddd;margin:18px 0}.image-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.select-with-button{display:grid;grid-template-columns:1fr auto;gap:8px}.setting-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #eee}.setting-used{font-size:12px;color:#777;margin-top:3px}.filter-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}.active-filter{outline:3px solid #90caf9}.db-status{font-weight:bold;font-size:16px;margin:0 0 10px;padding:10px;background:#e3f2fd;border-radius:8px;text-align:center}.db-status .db-name{font-size:20px;color:#1976d2;display:block;margin-top:4px}.db-main-btn{width:100%;padding:14px;font-size:16px;margin-bottom:0}.db-admin-title{font-size:13px;color:#777;margin-bottom:8px;font-weight:bold}.db-admin-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}.db-admin-btns button{margin-bottom:0;font-size:13px;padding:9px}
+  :root{--primary:#1a5276;--primary-hover:#154360;--background-color:#f8f9fa;}
+  body{font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:#f0f2f5;}
+  .container{max-width:900px;padding:1rem;}
+  .db-badge{background:#1a5276;color:#fff;padding:.4rem .9rem;border-radius:999px;font-weight:700;display:inline-flex;align-items:center;gap:.5rem;}
+  .card{background:#fff;border-radius:12px;padding:1.2rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .btn-primary{background:#1a5276;border-color:#1a5276;}
+  .btn-primary:hover{background:#154360;border-color:#154360;}
+  .btn-outline{border:1px solid #1a5276;color:#1a5276;background:#fff;}
+  .btn-outline:hover{background:#1a5276;color:#fff;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;}
+  .item-card{display:flex;gap:1rem;align-items:flex-start;}
+  .item-img{width:80px;height:80px;object-fit:cover;border-radius:8px;background:#e9ecef;flex-shrink:0;}
+  .item-info{flex:1;}
+  .item-name{font-weight:700;font-size:1.05rem;margin-bottom:.2rem;}
+  .item-meta{color:#666;font-size:.88rem;}
+  .tag{background:#e8f4f8;color:#1a5276;padding:.15rem .5rem;border-radius:4px;font-size:.8rem;display:inline-block;margin-right:.3rem;}
+  .empty{text-align:center;color:#888;padding:2rem;}
+  .search-box{display:flex;gap:.5rem;margin-bottom:.8rem;}
+  .search-box input{flex:1;}
+  .filter-btns{display:flex;gap:.5rem;margin-bottom:1rem;}
+  .filter-btns button{flex:1;font-size:.85rem;padding:.5rem;}
+  .filter-btns button.active{background:#1a5276;color:#fff;border-color:#1a5276;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:1rem;}
+  .modal.show{display:flex;}
+  .modal-content{background:#fff;border-radius:12px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:1.5rem;}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+  .modal-header h3{margin:0;}
+  .close-btn{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;}
+  .form-group{margin-bottom:.8rem;}
+  .form-group label{display:block;font-size:.9rem;font-weight:600;margin-bottom:.3rem;}
+  .form-group input,.form-group select,.form-group textarea{width:100%;}
+  .img-preview{max-width:120px;max-height:120px;border-radius:8px;margin-top:.5rem;}
+  .section-title{font-size:.85rem;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.05em;margin:1.5rem 0 .5rem;}
+  .db-list{list-style:none;padding:0;margin:0;}
+  .db-list li{padding:.7rem;border-bottom:1px solid #eee;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+  .db-list li:hover{background:#f8f9fa;}
+  .db-list li.active{background:#e8f4f8;font-weight:700;}
+  .danger{color:#c0392b;}
+  .success{color:#27ae60;}
+  .small{font-size:.85rem;}
+  .mt-1{margin-top:1rem;}
+  .mb-0{margin-bottom:0;}
+  .center{text-align:center;}
+  .right{text-align:right;}
+  .hidden{display:none !important;}
 </style>
+<script src="config.js"></script>
 </head>
 <body>
-<header><h1>📦 備品管理</h1></header>
-<main>
-<section id="homeScreen">
-  <div class="card db-box">
-    <div class="db-status" id="activeDbName">現在のDB：<span class="db-name">未選択</span></div>
-    <button class="primary db-main-btn" onclick="openDbSelector()">📂 DBを選択</button>
-  </div>
-  <div class="menu">
-    <button class="primary" onclick="showRegister()">＋ 備品を登録</button>
-    <button class="secondary" onclick="showAllItems()">📋 一覧を見る</button>
-  </div>
-  <div class="search-box">
-    <input id="searchInput" type="search" placeholder="名称・仕様・場・購入先・備考で検索">
-    <button class="primary" onclick="refreshList()">🔎</button>
-  </div>
-  <div class="filter-row">
-    <button id="filterAll" class="secondary active-filter" onclick="setImageFilter('all')">すべて</button>
-    <button id="filterWith" class="secondary" onclick="setImageFilter('with')">🖼 画像あり</button>
-    <button id="filterWithout" class="secondary" onclick="setImageFilter('without')">🚫 画像なし</button>
-  </div>
-  <div id="searchInfo" class="small"></div>
-  <div id="itemList"></div>
-  <hr>
-  <button class="secondary full" onclick="clearCache()">🧹 キャッシュをクリアして再読み込み</button>
-  <div style="margin-top:18px">
-    <button class="secondary full" onclick="exportBackup()">💾 バックアップを書き出す</button>
-  </div>
-  <label class="secondary full" style="display:block;text-align:center;cursor:pointer;margin-top:8px">
-    🔄 バックアップを統合（マージ）
-    <input type="file" accept=".json,application/json" style="display:none" onchange="mergeBackup(event)">
-  </label>
-  <hr>
-  <div class="card">
-    <div class="db-admin-title">🔧 DB管理（初期設定・管理者用）</div>
-    <div class="db-admin-btns">
-      <button class="primary" onclick="newDatabase()">＋ 新しいDB</button>
-      <button class="secondary" onclick="saveCurrentDb()">💾 現在のDBを保存</button>
-      <button class="secondary" onclick="refreshDbList()">🔄 DB一覧を更新</button>
-      <button class="secondary" onclick="openUserManager()">👥 利用者を追加</button>
+<div class="container">
+
+  <!-- 現在のDB表示 -->
+  <div class="card" style="padding:.8rem 1.2rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <span class="db-badge">📁 <span id="currentDbName">DB未選択</span></span>
+      </div>
+      <button class="btn-outline small" onclick="showDbSelector()">📂 DBを選択</button>
     </div>
-    <button class="secondary full" style="margin-top:10px" onclick="showMaintenance()">⚙️ 候補リストを管理</button>
   </div>
-</section>
 
-<section id="dbScreen" class="hidden"><div class="card">
-<h2>📂 DBを選択</h2>
-<div class="info-box">ここで選択した保存済みDBを開きます。<br>現在のDBの未保存変更は、DBを切り替えると引き継がれません。</div>
-<label class="form-group"><b>保存済みDB</b><select id="savedDbSelect"><option value="">保存済みDBを選択</option></select></label>
-<button class="primary full" onclick="loadSelectedSavedDb()">📂 選択したDBを開く</button>
-<br><br>
-<button class="danger full" onclick="deleteSelectedDb()">🗑️ 選択したDBを削除</button>
-<div class="small" style="margin-top:6px">削除するとGoogleドライブのスプレッドシートもゴミ箱に移動します。</div>
-<br><hr><br>
-<label class="secondary full" style="display:block;text-align:center;cursor:pointer">📥 外部DBファイルを読み込む
-  <input type="file" accept=".json,application/json" style="display:none" onchange="importDatabase(event)">
-</label>
-<br>
-<button class="secondary full" onclick="showHome()">↩ 現在のDBのまま</button>
-</div></section>
+  <!-- メニュー -->
+  <div class="grid-2">
+    <button class="btn-primary" onclick="showAddForm()">＋ 備品を登録</button>
+    <button class="btn-outline" onclick="showItemList()">📋 一覧を見る</button>
+  </div>
 
-<section id="userScreen" class="hidden"><div class="card">
-<h2>👥 DB利用者を追加</h2>
-<div class="info-box">あとからGoogleアカウントを追加できます。追加したユーザーは、そのDBのスプレッドシート編集者として登録され、DBアプリも利用できるようになります。</div>
-<label class="form-group"><b>DB</b><select id="userDbSelect" onchange="showDbUsers()"><option value="">DBを選択してください</option></select></label>
-<div id="currentDbUsers" class="small" style="margin-bottom:14px"></div>
-<label class="form-group"><b>追加するGoogleアカウント</b><input id="userEmail" type="email" placeholder="example@gmail.com" autocomplete="email"></label>
-<button class="primary full" onclick="addDbUser()">＋ このDBに利用者追加</button>
-<br><br>
-<button class="secondary full" onclick="showHome()">戻る</button>
-</div></section>
+  <!-- 検索 -->
+  <div class="card" style="padding:1rem;">
+    <div class="search-box">
+      <input type="search" id="searchInput" placeholder="名称・仕様・場・購入先・備考で検索" oninput="renderItems()">
+      <button class="btn-primary" onclick="renderItems()">🔍</button>
+    </div>
+    <div class="filter-btns">
+      <button id="filterAll" class="active" onclick="setFilter('all')">すべて</button>
+      <button id="filterImg" onclick="setFilter('image')">🖼 画像あり</button>
+      <button id="filterNoImg" onclick="setFilter('noimage')">🚫 画像なし</button>
+    </div>
+    <div id="itemList"></div>
+    <div class="small right" style="margin-top:.5rem;color:#888;">
+      表示：<span id="showingCount">0</span>件 / 登録：<span id="totalCount">0</span>件
+    </div>
+  </div>
 
-<section id="formScreen" class="hidden"><div class="card">
-<h2 id="formTitle">備品登録</h2>
-<div class="form-group"><label>名称</label><input id="name"></div>
-<div class="form-group"><label>仕様（サイズ）</label><input id="spec"></div>
-<div class="form-group"><label>個数</label><input id="quantity" type="number" min="0" step="1" inputmode="numeric"></div>
-<div class="form-group"><label>画像</label><div class="image-buttons"><button type="button" class="primary" onclick="takePhoto()">📷 カメラで撮影</button><button type="button" class="secondary" onclick="selectPhoto()">🖼 写真から選択</button></div><input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none"><input id="fileInput" type="file" accept="image/*" style="display:none"><img id="preview" class="preview hidden"></div>
-<div class="form-group"><label>保管場所</label><div class="select-with-button"><select id="location"></select><button type="button" class="secondary" onclick="addLocation()">＋追加</button></div></div>
-<div class="form-group"><label>入手時期</label><input id="obtained" type="date"></div>
-<div class="form-group"><label>保管期限</label><input id="expiry" type="date"></div>
-<div class="form-group"><label>購入先</label><div class="select-with-button"><select id="store"></select><button type="button" class="secondary" onclick="addStore()">＋追加</button></div></div>
-<div class="form-group"><label>価格</label><input id="price" type="number" inputmode="numeric"></div>
-<div class="form-group"><label>備考</label><textarea id="memo"></textarea></div>
-<button class="primary full" onclick="saveItem()">💾 保存する</button><br><br><button class="secondary full" onclick="showHome()">戻る</button>
-</div></section>
+  <!-- バックアップ・キャッシュ -->
+  <div class="card" style="padding:1rem;">
+    <button class="outline small" onclick="clearCache()">🧹 キャッシュをクリアして再読み込み</button>
+  </div>
 
-<section id="detailScreen" class="hidden"><div class="card"><div id="detailContent"></div><div class="actions"><button class="primary" onclick="editCurrentItem()">✏️ 編集</button><button class="danger" onclick="deleteCurrentItem()">🗑️ 削除</button></div><br><button class="secondary full" onclick="showHome()">戻る</button></div></section>
+  <!-- DB管理（管理者用・最下部） -->
+  <div class="section-title">🔧 DB管理（初期設定・管理者用）</div>
+  <div class="card">
+    <div class="grid-2">
+      <button class="btn-primary" onclick="showCreateDb()">＋ 新しいDB</button>
+      <button class="btn-outline" onclick="saveCurrentDb()">💾 現在のDBを保存</button>
+      <button class="btn-outline" onclick="refreshDbList()">🔄 DB一覧を更新</button>
+      <button class="btn-outline" onclick="showAddUser()">👥 利用者を追加</button>
+    </div>
+    <div style="margin-top:.8rem;">
+      <button class="outline small" onclick="showManageOptions()" style="width:100%;">⚙️ 候補リストを管理</button>
+    </div>
+    <div style="margin-top:.8rem;">
+      <button class="outline small danger" onclick="deleteSelectedDb()" style="width:100%;">🗑️ 選択したDBを削除</button>
+    </div>
+  </div>
 
-<section id="maintenanceScreen" class="hidden"><div class="card">
-<h2>⚙️ 候補リストを管理</h2>
-<div class="info-box">ここで削除するのは「候補」だけです。登録済み備品の保管場所・購入先のデータ変しません。</div>
-<h3>保管場所</h3><div id="locationMaintenance"></div><button class="primary full" onclick="addLocationFromSettings()">＋ 保管場所を追加</button>
-<hr><h3>購入先</h3><div id="storeMaintenance"></div><button class="primary full" onclick="addStoreFromSettings()">＋ 購入先を追加</button>
-<br><br><button class="secondary full" onclick="showHome()">戻る</button>
-</div></section>
-</main>
-<script src="config.js"></script>
+</div>
+
+<!-- DB選択モーダル -->
+<div id="dbSelectorModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📂 DBを選択</h3>
+      <button class="close-btn" onclick="closeModal('dbSelectorModal')">&times;</button>
+    </div>
+    <ul id="dbList" class="db-list"></ul>
+    <div id="dbListEmpty" class="empty hidden">DBがありません。「DB一覧を更新」を押してください。</div>
+  </div>
+</div>
+
+<!-- 備品登録モーダル -->
+<div id="addFormModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>＋ 備品を登録</h3>
+      <button class="close-btn" onclick="closeModal('addFormModal')">&times;</button>
+    </div>
+    <form onsubmit="event.preventDefault(); saveItem();">
+      <input type="hidden" id="itemId">
+      <div class="form-group">
+        <label>名称 *</label>
+        <input type="text" id="itemName" required>
+      </div>
+      <div class="form-group">
+        <label>仕様・型番</label>
+        <input type="text" id="itemSpec">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>数量</label>
+          <input type="number" id="itemQty" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label>保管場所</label>
+          <select id="itemLocation"></select>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>購入日</label>
+          <input type="date" id="itemObtained">
+        </div>
+        <div class="form-group">
+          <label>有効期限</label>
+          <input type="date" id="itemExpiry">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>購入先</label>
+          <select id="itemStore"></select>
+        </div>
+        <div class="form-group">
+          <label>価格（円）</label>
+          <input type="number" id="itemPrice" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>画像</label>
+        <input type="file" id="itemImage" accept="image/*" onchange="previewImage()">
+        <img id="imgPreview" class="img-preview hidden">
+      </div>
+      <div class="form-group">
+        <label>備考</label>
+        <textarea id="itemMemo" rows="2"></textarea>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;">💾 保存</button>
+    </form>
+  </div>
+</div>
+
+<!-- 新規DB作成モーダル -->
+<div id="createDbModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>＋ 新しいDB</h3>
+      <button class="close-btn" onclick="closeModal('createDbModal')">&times;</button>
+    </div>
+    <form onsubmit="event.preventDefault(); createDb();">
+      <div class="form-group">
+        <label>DB名 *</label>
+        <input type="text" id="newDbName" required placeholder="例：自家用、作業用">
+      </div>
+      <div class="form-group">
+        <label>編集者のGoogleアカウント（カンマ区切り・省略可）</label>
+        <input type="text" id="newDbEditors" placeholder="例：user@gmail.com">
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;">作成</button>
+    </form>
+  </div>
+</div>
+
+<!-- 利用者追加モーダル -->
+<div id="addUserModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>👥 利用者を追加</h3>
+      <button class="close-btn" onclick="closeModal('addUserModal')">&times;</button>
+    </div>
+    <form onsubmit="event.preventDefault(); addUser();">
+      <div class="form-group">
+        <label>追加するGoogleアカウント *</label>
+        <input type="email" id="addUserEmail" required placeholder="user@gmail.com">
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;">追加</button>
+    </form>
+  </div>
+</div>
+
+<!-- 候補リスト管理モーダル -->
+<div id="optionsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>⚙️ 候補リストを管理</h3>
+      <button class="close-btn" onclick="closeModal('optionsModal')">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>保管場所（改行区切り）</label>
+      <textarea id="locationsInput" rows="4"></textarea>
+    </div>
+    <div class="form-group">
+      <label>購入先（改行区切り）</label>
+      <textarea id="storesInput" rows="4"></textarea>
+    </div>
+    <button class="btn-primary" style="width:100%;" onclick="saveOptions()">💾 保存</button>
+  </div>
+</div>
+
 <script>
-const LOCAL_DB='BihinKanriLocalCache', LOCAL_DB_VERSION=2, ITEMS_STORE='items';
-const SETTINGS_KEY='BihinKanriCloudSettings', ACTIVE_DB_KEY='BihinKanriCloudActive';
-const DEFAULT_LOCATIONS=['工具棚A','工具棚B','ガレージ','物置','パントリー','倉庫','車庫'];
-const DEFAULT_STORES=['カインズ','コーナン','Amazon','楽天市場','モノタロウ','その他'];
-let localDb=null,currentItemId=null,editingId=null,selectedImageData=null,imageFilter='all';
-let activeDb=null,activeDbName='未選択';
+/* ===================== 状態 ===================== */
+let activeDb = null;
+let dbRegistry = [];
+let items = [];
+let settings = {locations:[],stores:[]};
+let currentFilter = 'all';
 
-const $=id=>document.getElementById(id);
-const createId=()=>'I'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-function normalizeJapanese(text){return String(text??'').normalize('NFKC').replace(/[ァ-ヶ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60)).toLowerCase();}
-function hideAllScreens(){document.querySelectorAll('main > section').forEach(s=>s.classList.add('hidden'));}
-function showHome(){hideAllScreens();$('homeScreen').classList.remove('hidden');updateDbName();refreshLocationList();refreshStoreList();refreshList();}
-function updateDbName(){const el=$('activeDbName');if(el)el.innerHTML='現在のDB：<span class="db-name">'+escapeHtml(activeDbName)+(activeDb?.spreadsheetUrl?' ☁️':'')+'</span>';}
-function getDbList(){return JSON.parse(localStorage.getItem('BihinKanriDbList')||'null')||(APP_CONFIG.DB_LIST||[]);}
-function setDbList(list){localStorage.setItem('BihinKanriDbList',JSON.stringify(list));}
-function getSettings(){return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null')||{locations:[...DEFAULT_LOCATIONS],stores:[...DEFAULT_STORES]};}
-function setSettings(s){const v={locations:[...(s.locations||[])],stores:[...(s.stores||[])]};localStorage.setItem(SETTINGS_KEY,JSON.stringify(v));return v;}
-function openLocalDb(){return new Promise((resolve,reject)=>{const r=indexedDB.open(LOCAL_DB,LOCAL_DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(ITEMS_STORE))d.createObjectStore(ITEMS_STORE,{keyPath:'id'});};r.onsuccess=e=>{localDb=e.target.result;resolve(localDb);};r.onerror=()=>reject(r.error);});}
-function localGetAll(){return new Promise((res,rej)=>{const r=localDb.transaction(ITEMS_STORE,'readonly').objectStore(ITEMS_STORE).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
-function localGet(id){return new Promise((res,rej)=>{const r=localDb.transaction(ITEMS_STORE,'readonly').objectStore(ITEMS_STORE).get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});}
-function localPut(item){return new Promise((res,rej)=>{const tx=localDb.transaction(ITEMS_STORE,'readwrite');tx.objectStore(ITEMS_STORE).put(item);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
-function localDelete(id){return new Promise((res,rej)=>{const tx=localDb.transaction(ITEMS_STORE,'readwrite');tx.objectStore(ITEMS_STORE).delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
-function localClear(){return new Promise((res,rej)=>{const tx=localDb.transaction(ITEMS_STORE,'readwrite');tx.objectStore(ITEMS_STORE).clear();tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
+/* ===================== 初期化 ===================== */
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadRegistry();
+  const lastId = localStorage.getItem('lastDbId');
+  if (lastId) {
+    const db = dbRegistry.find(d => d.spreadsheetId === lastId);
+    if (db) await openDb(db);
+  }
+  renderItems();
+});
 
-function jsonp(url,params={}){return new Promise((resolve,reject)=>{const cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);const script=document.createElement('script');const q=new URLSearchParams({...params,prefix:cb});let timer=setTimeout(()=>{cleanup();reject(new Error('Google側からの応答がありません。GoogleアカウントへのログインとWebアプリ権限を確認してください。'));},20000);window[cb]=data=>{cleanup();resolve(data);};script.onerror=()=>{cleanup();reject(new Error('Google Apps Scriptへ接続できませんでした。'));};script.src=url+(url.includes('?')?'&':'?')+q.toString();document.body.appendChild(script);function cleanup(){clearTimeout(timer);delete window[cb];script.remove();}});}
-async function apiGet(db,op='all'){if(!db?.webAppUrl)throw new Error('DBのWebアプリURLが登録されていません。');return jsonp(db.webAppUrl,{op:op});}
-async function apiPost(db,payload){if(!db?.webAppUrl)throw new Error('DBのWebアプリURLが登録されていません。');const body='payload='+encodeURIComponent(JSON.stringify(payload));await fetch(db.webAppUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:body});return {ok:true};}
-async function managerGet(op,params={}){if(!APP_CONFIG.MANAGER_URL)throw new Error('config.js の MANAGER_URL が未設定です。');return jsonp(APP_CONFIG.MANAGER_URL,{op:op,...params});}
-
-function openManagerAuth(){if(APP_CONFIG.MANAGER_URL){window.open(APP_CONFIG.MANAGER_URL+'?op=list','_blank');}}
-function openDbAuth(db){if(db?.webAppUrl){window.open(db.webAppUrl+'?op=all','_blank');}}
-
-async function refreshDbList(){
-  try{
-    const result=await managerGet('list');
-    if(!result.ok)throw new Error(result.error||'DB一覧取得失敗');
-    setDbList(result.databases||[]);
-    await refreshSavedDbSelector();
-    alert('DB一覧を更新しました。\n\n'+(result.databases||[]).length+'件のDBが見つかりました。');
-    return result.databases||[];
-  }catch(err){
-    if(err.message&&err.message.includes('Google側からの応答がありません')){
-      if(confirm('DB管理GASへ接続に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ページを開きますか？（一度だけ必要です）')){openManagerAuth();}
-    }else{alert('DB一覧を更新できませんでした。\n\n'+err.message);}
-    throw err;
+/* ===================== DB選択 ===================== */
+function showDbSelector() {
+  renderDbList();
+  document.getElementById('dbSelectorModal').classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+function renderDbList() {
+  const list = document.getElementById('dbList');
+  const empty = document.getElementById('dbListEmpty');
+  list.innerHTML = '';
+  if (!dbRegistry.length) {
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  dbRegistry.forEach(db => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${escapeHtml(db.name)}</span><span class="small">${db.spreadsheetId === activeDb?.spreadsheetId ? '✓' : ''}</span>`;
+    if (db.spreadsheetId === activeDb?.spreadsheetId) li.classList.add('active');
+    li.onclick = () => openDb(db);
+    list.appendChild(li);
+  });
+}
+async function openDb(db) {
+  activeDb = db;
+  localStorage.setItem('lastDbName', db.name);
+  localStorage.setItem('lastDbId', db.spreadsheetId);
+  document.getElementById('currentDbName').textContent = db.name;
+  closeModal('dbSelectorModal');
+  await loadDbData();
+  renderItems();
+  populateSelects();
+}
+async function loadDbData() {
+  if (!activeDb) return;
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL + '?op=all&spreadsheetId=' + encodeURIComponent(activeDb.spreadsheetId));
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    items = data.items || [];
+    settings = data.settings || {locations:[],stores:[]};
+    populateSelects();
+  } catch (err) {
+    alert('DB読み込みエラー：' + err.message);
+  } finally {
+    showLoading(false);
   }
 }
-function refreshSavedDbSelector(){const s=$('savedDbSelect');if(!s)return;const list=getDbList().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'ja'));s.innerHTML='<option value="">DBを選択してください</option>';list.forEach(x=>{const o=document.createElement('option');o.value=x.spreadsheetId;o.textContent=x.name;s.appendChild(o);});if(activeDb)s.value=activeDb.spreadsheetId;}
-function openDbSelector(){hideAllScreens();$('dbScreen').classList.remove('hidden');refreshSavedDbSelector();}
-function openUserManager(){hideAllScreens();$('userScreen').classList.remove('hidden');refreshUserDbSelector();}
-function refreshUserDbSelector(){const s=$('userDbSelect');const list=getDbList().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'ja'));s.innerHTML='<option value="">DBを選択してください</option>';list.forEach(x=>{const o=document.createElement('option');o.value=x.spreadsheetId;o.textContent=x.name;s.appendChild(o);});if(activeDb)s.value=activeDb.spreadsheetId;showDbUsers();}
-function showDbUsers(){const id=$('userDbSelect').value;const box=$('currentDbUsers');if(!id){box.textContent='';return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){box.textContent='';return;}const users=(String(db.editors||'').split(',').map(x=>x.trim()).filter(Boolean));box.innerHTML='<b>現在の利用者</b><br>'+(users.length?users.map(escapeHtml).join('<br>'):'追加ユーザーはいません');}
-async function addDbUser(){const id=$('userDbSelect').value;const email=$('userEmail').value.trim().toLowerCase();if(!id){alert('DBを選択してください。');return;}if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Googleアカウントのメールアドレスを正しく入力してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){alert('DBが見つかりません。');return;}if(!confirm('「'+email+'」をDB「'+db.name+'」の利用者として追加しますか？\n\nスプレッドシートの共有設定とDBアプリの利用権限を更新します。'))return;try{const result=await managerGet('addUser',{spreadsheetId:id,email:email});if(!result.ok)throw new Error(result.error||'利用者の追加に失敗しました。');const list=getDbList().map(x=>x.spreadsheetId===id?result.database:x);setDbList(list);$('userEmail').value='';refreshUserDbSelector();alert('利用者を追加しました。\n\n'+email+'\n\n追加したユザーには、GoogleアカウントでDBアプリを開いてもらってください。');}catch(err){alert('利用者の追加に失敗しました。\n\n'+err.message);}}
+function populateSelects() {
+  const locSel = document.getElementById('itemLocation');
+  const storeSel = document.getElementById('itemStore');
+  const savedLoc = locSel.value;
+  const savedStore = storeSel.value;
+  locSel.innerHTML = settings.locations.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+  storeSel.innerHTML = settings.stores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if (savedLoc) locSel.value = savedLoc;
+  if (savedStore) storeSel.value = savedStore;
+}
 
-async function loadSelectedSavedDb(){const id=$('savedDbSelect').value;if(!id){alert('DBを選択してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db)return;if(!confirm('「'+db.name+'」を開きますか？\n\n現在のDBの未保存変更は引き継がれません。'))return;try{await openCloudDb(db);showHome();alert('DBを開きました。\n\n'+db.name);}catch(err){if(err.message&&err.message.includes('Google側からの応答がありません')){if(confirm('DB「'+db.name+'」を開くにはGoogleでの権限承認が必要です。\n\n承認ページを開きますか？\n（承認後、再度「選択したDBを開く」を押してください）')){openDbAuth(db);}}else{alert('DBを開けませんでした。\n\n'+err.message);}}}
-
-async function deleteSelectedDb(){const id=$('savedDbSelect').value;if(!id){alert('DBを選択してください。');return;}const db=getDbList().find(x=>x.spreadsheetId===id);if(!db){alert('DBが見つかりません。');return;}if(!confirm('「'+db.name+'」を削除しますか？\n\nGoogleドライブのスプレッドシートもゴミ箱に移動します。\nこの操作は元に戻せません。'))return;if(!confirm('もう一度確認します。本当に「'+db.name+'」を削除しますか？'))return;try{const result=await managerGet('delete',{spreadsheetId:id});if(!result.ok)throw new Error(result.error||'DBの削除に失敗しました。');const list=getDbList().filter(x=>x.spreadsheetId!==id);setDbList(list);if(activeDb&&activeDb.spreadsheetId===id){activeDb=null;activeDbName='未選択';localStorage.removeItem(ACTIVE_DB_KEY);}refreshSavedDbSelector();alert('DBを削除しました。\n\n'+db.name);}catch(err){if(err.message&&err.message.includes('Google側からの応答がありません')){if(confirm('DB削除に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ページを開きますか？')){openManagerAuth();}}else{alert('DB削除に失敗しました。\n\n'+err.message);}}}
-
-async function openCloudDb(db){const result=await apiGet(db,'all');if(!result.ok)throw new Error(result.error||'DBを読み込めませんでした。');activeDb=db;activeDbName=db.name||result.dbName||'備品管理';APP_CONFIG.ACTIVE_DB_ID=db.spreadsheetId;localStorage.setItem(ACTIVE_DB_KEY,db.spreadsheetId);setSettings(result.settings||{locations:DEFAULT_LOCATIONS,stores:DEFAULT_STORES});await localClear();for(const item of result.items||[])await localPut(item);updateDbName();refreshLocationList();refreshStoreList();await refreshList();}
-
-async function newDatabase(){
-  if(APP_CONFIG.MANAGER_URL&&!localStorage.getItem('managerAuthorized')){
-    const msg='DB管理機能を利用するには、Googleアカウントで承認が必要です。\n\n承認ページを開きますか？（一度だけ必要です）\n※承認後、この画面に戻って再度「＋新しいDB」を押してください。';
-    if(confirm(msg)){openManagerAuth();localStorage.setItem('managerAuthorized','true');return;}
+/* ===================== 備品一覧 ===================== */
+function showItemList() {
+  document.getElementById('searchInput').scrollIntoView({behavior:'smooth'});
+}
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btns button').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter' + (f==='all'?'All':f==='image'?'Img':'NoImg')).classList.add('active');
+  renderItems();
+}
+function renderItems() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let filtered = items.filter(it => {
+    if (currentFilter === 'image' && !it.image) return false;
+    if (currentFilter === 'noimage' && it.image) return false;
+    if (!q) return true;
+    const text = [it.name,it.spec,it.location,it.store,it.memo].join(' ').toLowerCase();
+    return text.includes(q);
+  });
+  document.getElementById('showingCount').textContent = filtered.length;
+  document.getElementById('totalCount').textContent = items.length;
+  const container = document.getElementById('itemList');
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty">該当する備品はありません。</div>';
+    return;
   }
-  const name=prompt('新しいDB名を入力してください。\n例：園芸用品、工具、家電');
-  if(name===null)return;
-  const n=name.trim();
-  if(!n)return;
-  const editors=prompt('共同管理するGoogleアカウントのメールアドレスをカンマ区切りで入力してください。\n自分以外に追加する場合だけ入力します。','');
-  if(editors===null)return;
-  if(!confirm('Googleドライブに「'+n+'」のスプレッドシートを作成し、DB用Code.gsを埋め込み、Webアプリとして自動デプロします。\n\n作成しますか？'))return;
-  try{
-    const result=await managerGet('create',{name:n,editors:editors});
-    if(!result.ok)throw new Error(result.error||'DB作成に失敗');
-    const list=getDbList();
-    list.push(result.database);
-    setDbList(list);
-    if(result.database.webAppUrl){
-      const msg='新しいDB「'+n+'」を作成しました！\n\n初回使用にはGoogleでの権限承認が必要です。\n承認ページを開きますか？\n\n（承認後、このままDBを開きます）';
-      if(confirm(msg)){
-        openDbAuth(result.database);
-        alert('承認ページを開きました。\n\nGoogleアカウントでの承認を完了したら、\n「OK」を押してDBを開きます。');
-        try{
-          await openCloudDb(result.database);
-          showHome();
-          alert('新しいDBを作成・開きました。\n\n'+n);
-        }catch(openErr){
-          if(openErr.message&&openErr.message.includes('Google側からの応答がありません')){
-            alert('承認がまだ完了していないようです。\n\n承認ページで「許可」を押した後、\n「DBを選択」から「'+n+'」を開いてください。');
-          }else{
-            alert('DBを開けませんでした。\n\n'+openErr.message);
-          }
-        }
-      }else{
-        alert('DB「'+n+'」を作成しました。\n\n後で「DBを選択」から開いてください。');
-      }
-    }
-  }catch(err){
-    if(err.message&&err.message.includes('Google側からの応答がありません')){
-      if(confirm('DB作成に失敗しました。Googleアカウントでの承認が必要な可能性があります。\n\n承認ページを開きますか？')){openManagerAuth();}
-    }else{
-      alert('新しいDBの作成に失敗しました。\n\n'+err.message);
-    }
+  container.innerHTML = filtered.map(it => `
+    <div class="card item-card" style="padding:.8rem;">
+      ${it.image ? `<img src="${it.image}" class="item-img" alt="">` : '<div class="item-img" style="display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.7rem;">画像なし</div>'}
+      <div class="item-info">
+        <div class="item-name">${escapeHtml(it.name)}</div>
+        <div class="item-meta">
+          ${it.spec ? escapeHtml(it.spec)+' | ' : ''}
+          ${it.quantity ? '数量:'+it.quantity+' | ' : ''}
+          ${it.location ? '📍'+escapeHtml(it.location)+' | ' : ''}
+          ${it.store ? '🛒'+escapeHtml(it.store) : ''}
+        </div>
+        <div class="item-meta" style="margin-top:.3rem;">
+          ${it.obtained ? '購入:'+formatDate(it.obtained)+' | ' : ''}
+          ${it.expiry ? '期限:'+formatDate(it.expiry)+' | ' : ''}
+          ${it.price ? '¥'+Number(it.price).toLocaleString() : ''}
+        </div>
+        ${it.memo ? `<div class="item-meta" style="margin-top:.3rem;">📝 ${escapeHtml(it.memo)}</div>` : ''}
+        <div style="margin-top:.5rem;">
+          <button class="small btn-outline" onclick="editItem('${it.id}')">✏️ 編集</button>
+          <button class="small outline danger" onclick="deleteItem('${it.id}')">🗑️ 削除</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ===================== 備品登録・編集 ===================== */
+function showAddForm() {
+  if (!activeDb) { alert('先にDBを選択してください。'); return; }
+  document.getElementById('itemId').value = '';
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemSpec').value = '';
+  document.getElementById('itemQty').value = 1;
+  document.getElementById('itemObtained').value = '';
+  document.getElementById('itemExpiry').value = '';
+  document.getElementById('itemPrice').value = '';
+  document.getElementById('itemMemo').value = '';
+  document.getElementById('itemImage').value = '';
+  document.getElementById('imgPreview').classList.add('hidden');
+  populateSelects();
+  document.getElementById('addFormModal').classList.add('show');
+}
+function previewImage() {
+  const file = document.getElementById('itemImage').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('imgPreview');
+    img.src = e.target.result;
+    img.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+async function saveItem() {
+  if (!activeDb) return;
+  const id = document.getElementById('itemId').value || crypto.randomUUID();
+  const name = document.getElementById('itemName').value.trim();
+  if (!name) { alert('名称を入力してください。'); return; }
+  const file = document.getElementById('itemImage').files[0];
+  let image = '';
+  const existing = items.find(i => i.id === id);
+  if (existing && existing.image && !file) image = existing.image;
+  if (file) {
+    image = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result);
+      r.readAsDataURL(file);
+    });
+  }
+  const item = {
+    id, name,
+    spec: document.getElementById('itemSpec').value.trim(),
+    quantity: parseInt(document.getElementById('itemQty').value) || 1,
+    image,
+    location: document.getElementById('itemLocation').value,
+    obtained: document.getElementById('itemObtained').value,
+    expiry: document.getElementById('itemExpiry').value,
+    store: document.getElementById('itemStore').value,
+    price: parseInt(document.getElementById('itemPrice').value) || '',
+    memo: document.getElementById('itemMemo').value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+  if (!existing) item.createdAt = item.updatedAt;
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL, {
+      method: 'POST',
+      body: JSON.stringify({action:'saveItem', spreadsheetId:activeDb.spreadsheetId, item})
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const idx = items.findIndex(i => i.id === id);
+    if (idx >= 0) items[idx] = item; else items.push(item);
+    renderItems();
+    closeModal('addFormModal');
+  } catch (err) {
+    alert('保存エラー：' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
+function editItem(id) {
+  const it = items.find(i => i.id === id);
+  if (!it) return;
+  document.getElementById('itemId').value = it.id;
+  document.getElementById('itemName').value = it.name;
+  document.getElementById('itemSpec').value = it.spec || '';
+  document.getElementById('itemQty').value = it.quantity || 1;
+  document.getElementById('itemLocation').value = it.location || '';
+  document.getElementById('itemObtained').value = it.obtained || '';
+  document.getElementById('itemExpiry').value = it.expiry || '';
+  document.getElementById('itemStore').value = it.store || '';
+  document.getElementById('itemPrice').value = it.price || '';
+  document.getElementById('itemMemo').value = it.memo || '';
+  if (it.image) {
+    document.getElementById('imgPreview').src = it.image;
+    document.getElementById('imgPreview').classList.remove('hidden');
+  } else {
+    document.getElementById('imgPreview').classList.add('hidden');
+  }
+  populateSelects();
+  document.getElementById('addFormModal').classList.add('show');
+}
+async function deleteItem(id) {
+  if (!confirm('この備品を削除しますか？')) return;
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL, {
+      method: 'POST',
+      body: JSON.stringify({action:'deleteItem', spreadsheetId:activeDb.spreadsheetId, id})
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    items = items.filter(i => i.id !== id);
+    renderItems();
+  } catch (err) {
+    alert('削除エラー：' + err.message);
+  } finally {
+    showLoading(false);
   }
 }
 
-function refreshLocationList(selected=''){const s=$('location'),set=getSettings();s.innerHTML='<option value="">選択してください</option>';set.locations.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);});if(selected&&!set.locations.includes(selected)){const o=document.createElement('option');o.value=selected;o.textContent=selected;s.appendChild(o);}s.value=selected||'';}
-function refreshStoreList(selected=''){const s=$('store'),set=getSettings();s.innerHTML='<option value="">選択してください</option>';set.stores.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);});if(selected&&!set.stores.includes(selected)){const o=document.createElement('option');o.value=selected;o.textContent=selected;s.appendChild(o);}s.value=selected||'';}
-async function addLocation(){const v=prompt('追加する保管場所を入力してください。');if(v===null)return;const n=v.trim();if(!n)return;const s=getSettings();if(!s.locations.includes(n))s.locations.push(n);setSettings(s);refreshLocationList(n);await saveCloudSettings();}
-async function addStore(){const v=prompt('追加する購入先を入力してください。');if(v===null)return;const n=v.trim();if(!n)return;const s=getSettings();if(!s.stores.includes(n))s.stores.push(n);setSettings(s);refreshStoreList(n);await saveCloudSettings();}
-async function saveCloudSettings(){if(!activeDb)return;try{await apiPost(activeDb,{action:'saveSettings',settings:getSettings()});}catch(err){alert('候補リストのクラウド保存に失敗しました。\n'+err.message);}}
+/* ===================== DB管理 ===================== */
+async function loadRegistry() {
+  try {
+    const res = await fetch(MANAGER_URL + '?op=list');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    dbRegistry = data.databases || [];
+  } catch (err) {
+    console.error('DB一覧取得失敗', err);
+  }
+}
+async function refreshDbList() {
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL + '?op=list');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    dbRegistry = data.databases || [];
+    alert('DB一覧を更新しました。' + dbRegistry.length + '件');
+    renderDbList();
+  } catch (err) {
+    alert('更新エラー：' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
+function showCreateDb() {
+  document.getElementById('newDbName').value = '';
+  document.getElementById('newDbEditors').value = '';
+  document.getElementById('createDbModal').classList.add('show');
+}
+async function createDb() {
+  const name = document.getElementById('newDbName').value.trim();
+  if (!name) { alert('DB名を入力してください。'); return; }
+  const editors = document.getElementById('newDbEditors').value.split(',').map(s=>s.trim()).filter(Boolean);
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL, {
+      method: 'POST',
+      body: JSON.stringify({action:'createDb', name, editors})
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    await refreshDbList();
+    closeModal('createDbModal');
+    alert('「'+name+'」を作成しました。');
+    await openDb(data.database);
+  } catch (err) {
+    alert('新しいDBの作成に失敗しました。\n\n' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
+async function saveCurrentDb() {
+  if (!activeDb) { alert('DBが選択されていません。'); return; }
+  if (!confirm('クラウドに保存しますか？（現在のDBの内容が上書きされます）')) return;
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action:'saveAll',
+        spreadsheetId:activeDb.spreadsheetId,
+        items,
+        settings
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    alert('保存しました。（'+data.count+'件）');
+  } catch (err) {
+    alert('保存エラー：' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
+function showAddUser() {
+  if (!activeDb) { alert('先にDBを選択してください。'); return; }
+  document.getElementById('addUserEmail').value = '';
+  document.getElementById('addUserModal').classList.add('show');
+}
+async function addUser() {
+  if (!activeDb) return;
+  const email = document.getElementById('addUserEmail').value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert('正しいメールアドレスを入力してください。'); return;
+  }
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL + '?op=addUser&spreadsheetId=' + encodeURIComponent(activeDb.spreadsheetId) + '&email=' + encodeURIComponent(email));
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    alert('追加しました。');
+    closeModal('addUserModal');
+  } catch (err) {
+    alert('追加エラー：' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
+async function deleteSelectedDb() {
+  if (!activeDb) { alert('先にDBを選択してください。'); return; }
+  if (!confirm('「'+activeDb.name+'」を削除しますか？\n（スプレッドシートもゴミ箱に移動します）')) return;
+  if (!confirm('本当に削除しますか？この操作は元に戻せません。')) return;
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL + '?op=delete&spreadsheetId=' + encodeURIComponent(activeDb.spreadsheetId));
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    alert('削除しました。');
+    activeDb = null;
+    localStorage.removeItem('lastDbName');
+    localStorage.removeItem('lastDbId');
+    document.getElementById('currentDbName').textContent = 'DB未選択';
+    items = [];
+    renderItems();
+    await refreshDbList();
+  } catch (err) {
+    alert('削除エラー：' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
 
-function setImageFilter(v){imageFilter=v;['filterAll','filterWith','filterWithout'].forEach(id=>$(id).classList.remove('active-filter'));$('filter'+(v==='all'?'All':v==='with'?'With':'Without')).classList.add('active-filter');refreshList();}
-async function refreshList(){const items=await localGetAll();const key=normalizeJapanese($('searchInput').value.trim());let r=items.filter(item=>{if(imageFilter==='with'&&!item.image)return false;if(imageFilter==='without'&&item.image)return false;if(!key)return true;return[item.name,item.spec,item.location,item.store,item.memo].some(x=>normalizeJapanese(x).includes(key));});displayItems(r);$('searchInfo').textContent='表示：'+r.length+'件 / 登録：'+items.length+'件'+(key?'　検索語：「'+$('searchInput').value.trim()+'」':'');}
-function displayItems(items){const list=$('itemList');list.innerHTML='';if(!items.length){list.innerHTML='<div class="empty">該当する備品はありません。</div>';return;}items.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ja'));items.forEach(item=>{const card=document.createElement('div');card.className='card item-card';card.onclick=()=>showDetail(item.id);if(item.image){const im=document.createElement('img');im.className='item-image';im.src=item.image;im.alt=item.name||'';card.appendChild(im);}else{const no=document.createElement('div');no.className='item-image no-image';no.textContent='画像なし';card.appendChild(no);}const info=document.createElement('div');info.className='item-info';const n=document.createElement('div');n.className='item-name';n.textContent=(item.name||'名称なし')+(item.quantity!==undefined&&item.quantity!==''?'　×'+item.quantity:'');const l=document.createElement('div');l.className='item-location';l.textContent='📍 '+(item.location||'未設定');const e=document.createElement('div');e.textContent='期限：'+(item.expiry||'なし');setExpiryClass(e,item.expiry);info.append(n,l,e);card.appendChild(info);list.appendChild(card);});}
-function setExpiryClass(el,expiry){el.classList.remove('expired','expiring');if(!expiry)return;const t=new Date();t.setHours(0,0,0,0);const d=new Date(expiry);d.setHours(0,0,0,0);const diff=Math.floor((d-t)/86400000);if(diff<0)el.classList.add('expired');else if(diff<=30)el.classList.add('expiring');}
+/* ===================== 候補リスト管理 ===================== */
+function showManageOptions() {
+  if (!activeDb) { alert('先にDBを選択してください。'); return; }
+  document.getElementById('locationsInput').value = (settings.locations||[]).join('\n');
+  document.getElementById('storesInput').value = (settings.stores||[]).join('\n');
+  document.getElementById('optionsModal').classList.add('show');
+}
+async function saveOptions() {
+  if (!activeDb) return;
+  settings.locations = document.getElementById('locationsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  settings.stores = document.getElementById('storesInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  showLoading(true);
+  try {
+    const res = await fetch(MANAGER_URL, {
+      method: 'POST',
+      body: JSON.stringify({action:'saveSettings', spreadsheetId:activeDb.spreadsheetId, settings})
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    populateSelects();
+    closeModal('optionsModal');
+    alert('保存しました。');
+  } catch (err) {
+    alert('保存エラー：' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
 
-function showRegister(){hideAllScreens();editingId=null;selectedImageData=null;$('formScreen').classList.remove('hidden');$('formTitle').textContent='備品登録';clearForm();refreshLocationList();refreshStoreList();}
-function clearForm(){['name','spec','quantity','obtained','expiry','price','memo'].forEach(id=>$(id).value='');$('cameraInput').value='';$('fileInput').value='';$('preview').src='';$('preview').classList.add('hidden');}
-function takePhoto(){$('cameraInput').click();}
-function selectPhoto(){$('fileInput').click();}
-function handleImage(e){const f=e.target.files[0];if(!f)return;if(!f.type.startsWith('image/')){alert('画像ファイルを選択してください。');return;}compressImage(f).then(data=>{selectedImageData=data;$('preview').src=data;$('preview').classList.remove('hidden');}).catch(err=>alert('画像処理に失敗しました。\n'+err.message));}
-function compressImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('画像を読み込めません。'));reader.onload=()=>{const img=new Image();img.onload=()=>{const max=1200;let w=img.naturalWidth,h=img.naturalHeight;if(Math.max(w,h)>max){const rate=max/Math.max(w,h);w=Math.round(w*rate);h=Math.round(h*rate);}const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.72));};img.onerror=()=>reject(new Error('画像を表示できません。'));img.src=reader.result;};reader.readAsDataURL(file);});}
-$('cameraInput').addEventListener('change',handleImage);$('fileInput').addEventListener('change',handleImage);
-async function saveItem(){if(!activeDb){alert('先にDBを選択してください。');return;}const name=$('name').value.trim();if(!name){alert('名称を入力してください。');return;}const now=new Date().toISOString();let item;if(editingId){item=await localGet(editingId);if(!item)return;item={...item,name:name,spec:$('spec').value.trim(),quantity:$('quantity').value,image:selectedImageData===null?item.image||'':selectedImageData,location:$('location').value,obtained:$('obtained').value,expiry:$('expiry').value,store:$('store').value,price:$('price').value,memo:$('memo').value.trim(),updatedAt:now};}else{item={id:createId(),name:name,spec:$('spec').value.trim(),quantity:$('quantity').value,image:selectedImageData||'',location:$('location').value,obtained:$('obtained').value,expiry:$('expiry').value,store:$('store').value,price:$('price').value,memo:$('memo').value.trim(),createdAt:now,updatedAt:now};}const s=getSettings();if(item.location&&!s.locations.includes(item.location))s.locations.push(item.location);if(item.store&&!s.stores.includes(item.store))s.stores.push(item.store);setSettings(s);try{await apiPost(activeDb,{action:'saveItem',item:item});await localPut(item);alert(editingId?'変更を保存しました。':'登録しました。');showDetail(item.id);}catch(err){alert('クラウド保存に失敗しまし。\n\n'+err.message);}}
-async function editItem(id){const item=await localGet(id);if(!item)return;editingId=id;selectedImageData=null;hideAllScreens();$('formScreen').classList.remove('hidden');$('formTitle').textContent='備品を編集';$('name').value=item.name||'';$('spec').value=item.spec||'';$('quantity').value=item.quantity??'';$('obtained').value=item.obtained||'';$('expiry').value=item.expiry||'';$('price').value=item.price||'';$('memo').value=item.memo||'';$('cameraInput').value='';$('fileInput').value='';refreshLocationList(item.location||'');refreshStoreList(item.store||'');if(item.image){$('preview').src=item.image;$('preview').classList.remove('hidden');}else $('preview').classList.add('hidden');}
-function editCurrentItem(){if(currentItemId)editItem(currentItemId);}
-async function showDetail(id){const item=await localGet(id);if(!item)return;currentItemId=id;hideAllScreens();$('detailScreen').classList.remove('hidden');const c=$('detailContent');c.innerHTML='';if(item.image){const im=document.createElement('img');im.className='detail-image';im.src=item.image;im.alt=item.name||'';c.appendChild(im);}addDetail(c,'名称',item.name);addDetail(c,'仕様（サイズ）',item.spec);addDetail(c,'個数',item.quantity);addDetail(c,'保管場所',item.location);addDetail(c,'入手時期',item.obtained);const er=addDetail(c,'保管期限',item.expiry);if(item.expiry)setExpiryClass(er.querySelector('.detail-value'),item.expiry);addDetail(c,'購入先',item.store);addDetail(c,'価格',item.price?Number(item.price).toLocaleString()+' 円':'');addDetail(c,'備考',item.memo);}
-function addDetail(c,label,value){const r=document.createElement('div');r.className='detail-row';const l=document.createElement('div');l.className='detail-label';l.textContent=label;const v=document.createElement('div');v.className='detail-value';v.textContent=value||'－';r.append(l,v);c.appendChild(r);return r;}
-async function deleteCurrentItem(){if(!currentItemId||!activeDb)return;const item=await localGet(currentItemId);if(!item||!confirm('「'+item.name+'」を削除しますか？'))return;try{await apiPost(activeDb,{action:'deleteItem',id:currentItemId});await localDelete(currentItemId);currentItemId=null;alert('削除しました。');showHome();}catch(err){alert('削除に失敗しました。\n'+err.message);}}
+/* ===================== キャッシュ ===================== */
+function clearCache() {
+  localStorage.clear();
+  location.reload();
+}
+function showLoading(show) {
+  // 必要に応じてローディング表示を実装
+}
 
-async function showMaintenance(){hideAllScreens();$('maintenanceScreen').classList.remove('hidden');const s=getSettings(),items=await localGetAll();renderSettingList('locationMaintenance',s.locations,'location',items);renderSettingList('storeMaintenance',s.stores,'store',items);}
-function renderSettingList(id,list,type,items){const c=$(id);c.innerHTML='';list.forEach((v,i)=>{const count=items.filter(x=>(x[type]||'')===v).length;const row=document.createElement('div');row.className='setting-row';const label=document.createElement('div');label.innerHTML='<b>'+escapeHtml(v)+'</b>'+(count?'<div class="setting-used">登録済み '+count+'件で使用中</div>':'');const b=document.createElement('button');b.className='danger';b.textContent='削除';b.onclick=()=>removeCandidate(type,i,v,count);row.append(label,b);c.appendChild(row);});}
-function escapeHtml(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML;}
-async function removeCandidate(type,index,value,count){const label=type==='location'?'保管場所':'購入先';if(count){if(!confirm('「'+value+'」は登録済み '+count+'件で使用中です。\n\n候補から削除しますか？\n\n※登録済みデータは変更されません。'))return;if(!confirm('もう一度確認します。\n「'+value+'」を候補から削除しますか？'))return;}else if(!confirm('「'+value+'」を候補から削除しますか？'))return;const s=getSettings(),arr=type==='location'?s.locations:s.stores;arr.splice(index,1);setSettings(s);await saveCloudSettings();await showMaintenance();alert(label+'の候補を削除しました。');}
-function addLocationFromSettings(){addCandidate('location');}
-function addStoreFromSettings(){addCandidate('store');}
-async function addCandidate(type){const label=type==='location'?'保管場所':'購入先';const v=prompt('追加する'+label+'を入力してください。');if(v===null)return;const n=v.trim();if(!n)return;const s=getSettings(),arr=type==='location'?s.locations:s.stores;if(arr.includes(n)){alert('すでに登録されています。');return;}arr.push(n);setSettings(s);await saveCloudSettings();await showMaintenance();}
-
-async function saveCurrentDb(){if(!activeDb){alert('先にDBを選択してださい。');return;}const items=await localGetAll();try{await apiPost(activeDb,{action:'saveAll',items:items,settings:getSettings()});alert('「'+activeDbName+'」をクラウドDBへ保存しました。\n\n共有している人からも同じDBを利用できます。');}catch(err){alert('DB保存に失敗しました。\n'+err.message);}}
-async function exportBackup(){const items=await localGetAll();const data={formatVersion:5,dbName:activeDbName,exportedAt:new Date().toISOString(),settings:getSettings(),items:items};downloadJson(data,activeDbName+'_DB_'+today()+'.json');}
-function downloadJson(data,name){const blob=new Blob([JSON.stringify(data)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function today(){return new Date().toISOString().slice(0,10);}
-async function importDatabase(e){const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.items))throw new Error('DBファイルの形式が不正です。');if(!activeDb){alert('先にクラウドDBを選択してください。');return;}await apiPost(activeDb,{action:'saveAll',items:data.items,settings:data.settings||getSettings()});await openCloudDb(activeDb);alert('バックアップをクラウドDBへ反映しました。');}catch(err){alert('DB読み込みに失敗しました。\n'+err.message);}e.target.value='';}
-async function mergeBackup(e){const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.items))throw new Error('バックアップ形式が不正です。');const current=new Map((await localGetAll()).map(x=>[String(x.id),x]));let add=0,upd=0;for(const raw of data.items){let item={...raw,id:raw.id?String(raw.id):createId()};if(current.has(item.id)){const old=current.get(item.id);if(!item.image)item.image=old.image||'';item.createdAt=item.createdAt||old.createdAt;item.updatedAt=new Date().toISOString();upd++;}else{const now=new Date().toISOString();item.createdAt=item.createdAt||now;item.updatedAt=item.updatedAt||now;add++;}await localPut(item);if(activeDb)await apiPost(activeDb,{action:'saveItem',item:item});}const s=getSettings();for(const x of data.settings?.locations||[])if(x&&!s.locations.includes(x))s.locations.push(x);for(const x of data.settings?.stores||[])if(x&&!s.stores.includes(x))s.stores.push(x);setSettings(s);await saveCloudSettings();await refreshList();alert('バックアップを統合しました。\n\n新規追加：'+add+'件\n更新：'+upd+'件');}catch(err){alert('統合に失敗しました。\n'+err.message);}e.target.value='';}
-async function clearCache(){if(!confirm('PWAのキャッシュをクリアして再読み込みします。\n\nGoogleスプレッドシートのDBデータは削除されません。'))return;try{for(const k of await caches.keys())await caches.delete(k);for(const r of await navigator.serviceWorker.getRegistrations())await r.update();}catch(e){}location.reload();}
-function showAllItems(){showHome();$('searchInput').value='';refreshList();}
-
-async function init(){await openLocalDb();const savedId=localStorage.getItem(ACTIVE_DB_KEY);let list=getDbList();if(APP_CONFIG.MANAGER_URL){try{list=await refreshDbList();}catch(e){}}if(savedId){const db=list.find(x=>x.spreadsheetId===savedId);if(db){try{await openCloudDb(db);}catch(err){console.warn(err);activeDb=db;activeDbName=db.name||'未選択';}}}updateDbName();refreshLocationList();refreshStoreList();await refreshList();}
-init().catch(err=>{console.error(err);alert('アプリ初期化エラー：'+err.message);});
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js?v=cloud1').catch(console.log));
+/* ===================== ユーティリティ ===================== */
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function formatDate(d) {
+  if (!d) return '';
+  const s = String(d);
+  if (s.match(/^\d{4}-\d{2}-\d{2}$/)) return s;
+  try { return new Date(s).toISOString().split('T')[0]; } catch(e) { return s; }
+}
 </script>
-</body></html>
+</body>
+</html>
