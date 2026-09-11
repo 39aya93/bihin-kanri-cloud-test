@@ -37,17 +37,36 @@ function doGet(e) {
   const op = p.op || 'list';
   let result;
   try {
-    if (op === 'list') result = {ok:true, databases:listDatabases_()};
-    else if (op === 'all') {
+    if (op === 'list') {
+      result = {ok:true, databases:listDatabases_()};
+    } else if (op === 'all') {
       const ssId = String(p.spreadsheetId || '').trim();
       if (!ssId) throw new Error('DBが指定されていません。');
       result = getAll_(ssId);
-    } else if (op === 'health') result = {ok:true, service:'BihinKanri DB Manager',time:new Date().toISOString()};
-    else throw new Error('不明な操作です: '+op);
+    } else if (op === 'create') {
+      const name = String(p.name || '').trim();
+      const editors = String(p.editors || '').split(',').map(x=>x.trim()).filter(Boolean);
+      if (!name) throw new Error('DB名がありません。');
+      result = {ok:true, database:createDatabase_(name, editors)};
+    } else if (op === 'delete') {
+      const spreadsheetId = String(p.spreadsheetId || '').trim();
+      if (!spreadsheetId) throw new Error('DBが指定されていません。');
+      result = {ok:true, deleted:deleteDatabase_(spreadsheetId)};
+    } else if (op === 'addUser') {
+      const spreadsheetId = String(p.spreadsheetId || '').trim();
+      const email = String(p.email || '').trim().toLowerCase();
+      if (!spreadsheetId) throw new Error('DBが指定されていません。');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Googleアカウントのメールアドレスを正く入力してください。');
+      result = {ok:true, database:addUserToDatabase_(spreadsheetId, email)};
+    } else if (op === 'health') {
+      result = {ok:true, service:'BihinKanri DB Manager',time:new Date().toISOString()};
+    } else {
+      throw new Error('不明な操作です: ' + op);
+    }
   } catch (err) {
-    result = {ok:false,error:String(err && err.message ? err.message : err)};
+    result = {ok:false, error:String(err && err.message ? err.message : err)};
   }
-  return output_(result,p.prefix);
+  return output_(result, p.prefix);
 }
 
 function doPost(e) {
@@ -67,19 +86,23 @@ function doPost(e) {
     const action = payload.action || '';
     const ssId = String(payload.spreadsheetId || '').trim();
 
-    if (action === 'createDb') {
-      const name = String(payload.name || '').trim();
-      const editors = Array.isArray(payload.editors) ? payload.editors : [];
-      result = createDatabase_(name, editors);
-    } else if (!ssId) {
-      throw new Error('DBが指定されていません。');
-    } else if (action === 'saveItem') result = saveItem_(ssId, payload.item);
-    else if (action === 'deleteItem') result = deleteItem_(ssId, String(payload.id));
-    else if (action === 'saveSettings') result = saveSettings_(ssId, payload.settings || {});
-    else if (action === 'saveAll') result = saveAll_(ssId, payload);
-    else throw new Error('不明な書き込み操作です: '+action);
+    if (action === 'saveItem') {
+      if (!ssId) throw new Error('DBが指定されていません。');
+      result = saveItem_(ssId, payload.item);
+    } else if (action === 'deleteItem') {
+      if (!ssId) throw new Error('DBが指定されていません。');
+      result = deleteItem_(ssId, String(payload.id));
+    } else if (action === 'saveSettings') {
+      if (!ssId) throw new Error('DBが指定されていません。');
+      result = saveSettings_(ssId, payload.settings || {});
+    } else if (action === 'saveAll') {
+      if (!ssId) throw new Error('DBが指定されていません。');
+      result = saveAll_(ssId, payload);
+    } else {
+      throw new Error('不明な書き込み操作です: ' + action);
+    }
   } catch(err) {
-    result = {ok:false,error:String(err && err.message ? err.message : err)};
+    result = {ok:false, error:String(err && err.message ? err.message : err)};
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -94,8 +117,13 @@ function listDatabases_() {
   const sh = ss.getSheetByName(MANAGER_SHEET_NAME);
   const values = sh.getDataRange().getValues();
   return values.slice(1).filter(r=>r[0] && r[1]).map(r=>({
-    name:String(r[0]), spreadsheetId:String(r[1]), spreadsheetUrl:String(r[2]||('https://docs.google.com/spreadsheets/d/'+r[1]+'/edit')),
-    scriptId:String(r[3]||''), webAppUrl:String(r[4]||''), editors:String(r[5]||''), createdAt:r[6] ? new Date(r[6]).toISOString() : ''
+    name:String(r[0]),
+    spreadsheetId:String(r[1]),
+    spreadsheetUrl:String(r[2]||('https://docs.google.com/spreadsheets/d/'+r[1]+'/edit')),
+    scriptId:String(r[3]||''),
+    webAppUrl:String(r[4]||''),
+    editors:String(r[5]||''),
+    createdAt:r[6] ? new Date(r[6]).toISOString() : ''
   }));
 }
 
@@ -113,11 +141,80 @@ function createDatabase_(name, editors) {
   });
 
   const reg = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID')).getSheetByName(MANAGER_SHEET_NAME);
-  reg.appendRow([name,spreadsheetId,ss.getUrl(),'','',editors.join(','),new Date()]);
+  reg.appendRow([name, spreadsheetId, ss.getUrl(), '', '', editors.join(','), new Date()]);
 
   return {
-    name, spreadsheetId, spreadsheetUrl:ss.getUrl(),
-    scriptId:'', webAppUrl:'', editors
+    name: name,
+    spreadsheetId: spreadsheetId,
+    spreadsheetUrl: ss.getUrl(),
+    scriptId: '',
+    webAppUrl: '',
+    editors: editors
+  };
+}
+
+function deleteDatabase_(spreadsheetId) {
+  setupManager();
+  const regSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID'));
+  const reg = regSs.getSheetByName(MANAGER_SHEET_NAME);
+  const values = reg.getDataRange().getValues();
+  let row = -1;
+  for (let i=1; i<values.length; i++) {
+    if (String(values[i][1] || '') === spreadsheetId) {
+      row = i + 1;
+      break;
+    }
+  }
+  if (row < 0) throw new Error('指定されたDBがDB管理台帳に見つかりません。');
+
+  try {
+    DriveApp.getFileById(spreadsheetId).setTrashed(true);
+  } catch(err) {}
+
+  reg.deleteRow(row);
+  return true;
+}
+
+function addUserToDatabase_(spreadsheetId, email) {
+  setupManager();
+  const regSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID'));
+  const reg = regSs.getSheetByName(MANAGER_SHEET_NAME);
+  const values = reg.getDataRange().getValues();
+  let row = -1;
+  let record = null;
+  for (let i=1; i<values.length; i++) {
+    if (String(values[i][1] || '') === spreadsheetId) {
+      row = i + 1;
+      record = {
+        name:String(values[i][0] || ''),
+        scriptId:String(values[i][3] || ''),
+        webAppUrl:String(values[i][4] || ''),
+        editors:String(values[i][5] || '')
+      };
+      break;
+    }
+  }
+  if (row < 0 || !record) throw new Error('指定されたDBがDB管理台帳に見つかりません。');
+
+  const currentEditors = record.editors.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
+  if (currentEditors.includes(email)) throw new Error('このユーザーはすでに追加されています。');
+
+  try {
+    DriveApp.getFileById(spreadsheetId).addEditor(email);
+  } catch (err) {
+    throw new Error('Googleスプレッドシートの共有設定に失敗しました：' + String(err.message || err));
+  }
+
+  const newEditors = currentEditors.concat(email);
+  reg.getRange(row, 6).setValue(newEditors.join(','));
+
+  return {
+    name:record.name,
+    spreadsheetId:spreadsheetId,
+    spreadsheetUrl:'https://docs.google.com/spreadsheets/d/'+spreadsheetId+'/edit',
+    scriptId:record.scriptId,
+    webAppUrl:record.webAppUrl,
+    editors:newEditors
   };
 }
 
@@ -125,22 +222,24 @@ function getAll_(spreadsheetId) {
   const ss = SpreadsheetApp.openById(spreadsheetId);
   const sh = ss.getSheetByName(ITEMS_SHEET);
   const settings = readSettings_(ss);
-  if (!sh || sh.getLastRow() < 2) return {ok:true,dbName:ss.getName(),spreadsheetId:ss.getId(),settings:settings,items:[]};
+  if (!sh || sh.getLastRow() < 2) {
+    return {ok:true, dbName:ss.getName(), spreadsheetId:ss.getId(), settings:settings, items:[]};
+  }
   const values = sh.getRange(2,1,sh.getLastRow()-1,ITEM_HEADERS.length).getValues();
   const items = values.filter(r=>r[0] !== '').map(rowToItem_);
-  return {ok:true,dbName:ss.getName(),spreadsheetId:ss.getId(),settings:settings,items:items};
+  return {ok:true, dbName:ss.getName(), spreadsheetId:ss.getId(), settings:settings, items:items};
 }
 
 function rowToItem_(r) {
   const o = {};
-  ITEM_HEADERS.forEach((h,i)=>o[h]=r[i] === null || r[i] === undefined ? '' : r[i]);
+  ITEM_HEADERS.forEach((h,i)=>{ o[h] = (r[i] === null || r[i] === undefined) ? '' : r[i]; });
   if (o.quantity !== '' && o.quantity !== null) o.quantity = Number(o.quantity);
   if (o.price !== '' && o.price !== null) o.price = Number(o.price);
   return o;
 }
 
 function itemToRow_(item) {
-  return ITEM_HEADERS.map(h=>item && item[h] !== undefined ? item[h] : '');
+  return ITEM_HEADERS.map(h=> item && item[h] !== undefined ? item[h] : '');
 }
 
 function saveItem_(spreadsheetId, item) {
@@ -153,16 +252,18 @@ function saveItem_(spreadsheetId, item) {
     const last = sh.getLastRow();
     if (last >= 2) {
       const ids = sh.getRange(2,1,last-1,1).getValues();
-      for (let i=0;i<ids.length;i++) {
+      for (let i=0; i<ids.length; i++) {
         if (String(ids[i][0]) === id) {
-          sh.getRange(i+2,1,1,ITEM_HEADERS.length).setValues([itemToRow_(item)]);
-          return {ok:true,updated:true,id:id};
+          sh.getRange(i+2, 1, 1, ITEM_HEADERS.length).setValues([itemToRow_(item)]);
+          return {ok:true, updated:true, id:id};
         }
       }
     }
     sh.appendRow(itemToRow_(item));
-    return {ok:true,updated:false,id:id};
-  } finally { lock.releaseLock(); }
+    return {ok:true, updated:false, id:id};
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function deleteItem_(spreadsheetId, id) {
@@ -171,21 +272,26 @@ function deleteItem_(spreadsheetId, id) {
   try {
     const sh = getItemsSheet_(spreadsheetId);
     const last = sh.getLastRow();
-    if (last < 2) return {ok:true,deleted:false};
+    if (last < 2) return {ok:true, deleted:false};
     const ids = sh.getRange(2,1,last-1,1).getValues();
-    for (let i=0;i<ids.length;i++) {
-      if (String(ids[i][0]) === id) { sh.deleteRow(i+2); return {ok:true,deleted:true}; }
+    for (let i=0; i<ids.length; i++) {
+      if (String(ids[i][0]) === id) {
+        sh.deleteRow(i+2);
+        return {ok:true, deleted:true};
+      }
     }
-    return {ok:true,deleted:false};
-  } finally { lock.releaseLock(); }
+    return {ok:true, deleted:false};
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function saveSettings_(spreadsheetId, settings) {
   const sh = getSettingsSheet_(spreadsheetId);
   sh.getRange('A1:B3').setValues([
     ['key','value'],
-    ['locations',JSON.stringify(Array.isArray(settings.locations)?settings.locations:[])],
-    ['stores',JSON.stringify(Array.isArray(settings.stores)?settings.stores:[])]
+    ['locations', JSON.stringify(Array.isArray(settings.locations) ? settings.locations : [])],
+    ['stores', JSON.stringify(Array.isArray(settings.stores) ? settings.stores : [])]
   ]);
   return {ok:true};
 }
@@ -195,24 +301,30 @@ function saveAll_(spreadsheetId, payload) {
   lock.waitLock(20000);
   try {
     const sh = getItemsSheet_(spreadsheetId);
-    if (sh.getLastRow() > 1) sh.getRange(2,1,sh.getLastRow()-1,ITEM_HEADERS.length).clearContent();
+    if (sh.getLastRow() > 1) {
+      sh.getRange(2, 1, sh.getLastRow()-1, ITEM_HEADERS.length).clearContent();
+    }
     const items = Array.isArray(payload.items) ? payload.items : [];
-    if (items.length) sh.getRange(2,1,items.length,ITEM_HEADERS.length).setValues(items.map(itemToRow_));
+    if (items.length) {
+      sh.getRange(2, 1, items.length, ITEM_HEADERS.length).setValues(items.map(itemToRow_));
+    }
     saveSettings_(spreadsheetId, payload.settings || {});
-    return {ok:true,count:items.length};
-  } finally { lock.releaseLock(); }
+    return {ok:true, count:items.length};
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function readSettings_(ss) {
   const sh = ss.getSheetByName(SETTINGS_SHEET);
-  if (!sh || sh.getLastRow() < 3) return {locations:[],stores:[]};
-  const rows = sh.getRange(2,1,Math.min(2,sh.getLastRow()-1),2).getValues();
-  const out = {locations:[],stores:[]};
+  if (!sh || sh.getLastRow() < 3) return {locations:[], stores:[]};
+  const rows = sh.getRange(2, 1, Math.min(2, sh.getLastRow()-1), 2).getValues();
+  const out = {locations:[], stores:[]};
   rows.forEach(r=>{
     try {
       const val = JSON.parse(String(r[1] || '[]'));
-      if (r[0] === 'locations') out.locations = Array.isArray(val)?val:[];
-      if (r[0] === 'stores') out.stores = Array.isArray(val)?val:[];
+      if (r[0] === 'locations') out.locations = Array.isArray(val) ? val : [];
+      if (r[0] === 'stores') out.stores = Array.isArray(val) ? val : [];
     } catch(err) {}
   });
   return out;
@@ -223,7 +335,7 @@ function getItemsSheet_(spreadsheetId) {
   let sh = ss.getSheetByName(ITEMS_SHEET);
   if (!sh) {
     sh = ss.insertSheet(ITEMS_SHEET);
-    sh.getRange(1,1,1,ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
+    sh.getRange(1, 1, 1, ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
   }
   return sh;
 }
@@ -249,19 +361,21 @@ function initializeDatabase_(ss) {
   settings.clear();
   settings.getRange('A1:B3').setValues([
     ['key','value'],
-    ['locations',JSON.stringify(DEFAULT_LOCATIONS)],
-    ['stores',JSON.stringify(DEFAULT_STORES)]
+    ['locations', JSON.stringify(DEFAULT_LOCATIONS)],
+    ['stores', JSON.stringify(DEFAULT_STORES)]
   ]);
   settings.setFrozenRows(1);
   const first = ss.getSheetByName('Sheet1');
-  if (first && first.getSheetId() !== items.getSheetId() && first.getLastRow() === 0) ss.deleteSheet(first);
+  if (first && first.getSheetId() !== items.getSheetId() && first.getLastRow() === 0) {
+    ss.deleteSheet(first);
+  }
 }
 
 function output_(obj, prefix) {
   const json = JSON.stringify(obj);
   if (prefix) {
     if (!/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(prefix)) throw new Error('prefix is invalid');
-    return ContentService.createTextOutput(prefix+'('+json+')').setMimeType(ContentService.MimeType.JAVASCRIPT);
+    return ContentService.createTextOutput(prefix + '(' + json + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }
