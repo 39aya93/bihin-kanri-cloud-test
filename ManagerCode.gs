@@ -1,15 +1,15 @@
 /**
- * 備品管理：DB管理用 Apps Script
+ * 備品管理：DB管理用 Apps Script（1つで複数DB管理方式・Apps Script API不使用）
  */
-
 const MANAGER_SHEET_NAME = 'DB管理台帳';
 const DEFAULT_LOCATIONS = ['工具棚A','工具棚B','ガレージ','物置','パントリー','倉庫','車庫'];
 const DEFAULT_STORES = ['カインズ','コーナン','Amazon','楽天市場','モノタロウ','その他'];
-const ALLOWED_MANAGER_USERS = [];
+const ITEMS_SHEET = 'Items';
+const SETTINGS_SHEET = 'Settings';
+const ITEM_HEADERS = ['id','name','spec','quantity','image','location','obtained','expiry','store','price','memo','createdAt','updatedAt'];
 
 function assertManagerUser_() {
   const email = String(Session.getActiveUser().getEmail() || '').toLowerCase();
-  if (ALLOWED_MANAGER_USERS.length && !ALLOWED_MANAGER_USERS.map(x=>String(x).toLowerCase()).includes(email)) throw new Error('DB管理権限がありません：'+(email||'Googleアカウント不明'));
   return email;
 }
 
@@ -38,27 +38,40 @@ function doGet(e) {
   let result;
   try {
     if (op === 'list') result = {ok:true, databases:listDatabases_()};
-    else if (op === 'create') {
-      const name = String(p.name || '').trim();
-      if (!name) throw new Error('DB名がありません。');
-      const editors = String(p.editors || '').split(',').map(x=>x.trim()).filter(Boolean);
-      result = {ok:true, database:createDatabase_(name, editors)};
-    } else if (op === 'delete') {
-      const spreadsheetId = String(p.spreadsheetId || '').trim();
-      if (!spreadsheetId) throw new Error('DBが指定されていません。');
-      result = {ok:true, deleted:deleteDatabase_(spreadsheetId)};
-    } else if (op === 'addUser') {
-      const spreadsheetId = String(p.spreadsheetId || '').trim();
-      const email = String(p.email || '').trim().toLowerCase();
-      if (!spreadsheetId) throw new Error('DBが指定されていません。');
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Googleアカウントのメールアドレスを正しく入力してください。');
-      result = {ok:true, database:addUserToDatabase_(spreadsheetId, email)};
+    else if (op === 'all') {
+      const ssId = String(p.spreadsheetId || '').trim();
+      if (!ssId) throw new Error('DBが指定されていません。');
+      result = getAll_(ssId);
     } else if (op === 'health') result = {ok:true, service:'BihinKanri DB Manager',time:new Date().toISOString()};
     else throw new Error('不明な操作です: '+op);
   } catch (err) {
     result = {ok:false,error:String(err && err.message ? err.message : err)};
   }
   return output_(result,p.prefix);
+}
+
+function doPost(e) {
+  let result;
+  try {
+    const payload = e.postData && e.postData.contents ? JSON.parse(e.postData.contents) : {};
+    const action = payload.action || '';
+    const ssId = String(payload.spreadsheetId || '').trim();
+
+    if (action === 'createDb') {
+      const name = String(payload.name || '').trim();
+      const editors = Array.isArray(payload.editors) ? payload.editors : [];
+      result = createDatabase_(name, editors);
+    } else if (!ssId) {
+      throw new Error('DBが指定されていません。');
+    } else if (action === 'saveItem') result = saveItem_(ssId, payload.item);
+    else if (action === 'deleteItem') result = deleteItem_(ssId, String(payload.id));
+    else if (action === 'saveSettings') result = saveSettings_(ssId, payload.settings || {});
+    else if (action === 'saveAll') result = saveAll_(ssId, payload);
+    else throw new Error('不明な書き込み操作です: '+action);
+  } catch(err) {
+    result = {ok:false,error:String(err && err.message ? err.message : err)};
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function listDatabases_() {
@@ -85,240 +98,20 @@ function createDatabase_(name, editors) {
     try { DriveApp.getFileById(spreadsheetId).addEditor(email); } catch(err) {}
   });
 
-  const ownerEmail = String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
-  const allowedUsers = Array.from(new Set([ownerEmail].concat(editors).filter(Boolean)));
-  const project = apiCreateProject_(name, spreadsheetId);
-  apiUpdateContent_(project.scriptId, getDbCodeTemplate_(allowedUsers), name);
-  const version = apiCreateVersion_(project.scriptId, '初期DB版');
-  const deployment = apiCreateDeployment_(project.scriptId, version.versionNumber, name);
-
-  let webAppUrl = '';
-  if (deployment.entryPoints && deployment.entryPoints[0] && deployment.entryPoints[0].webApp) {
-    webAppUrl = deployment.entryPoints[0].webApp.url || '';
-  }
-  if (!webAppUrl && deployment.deploymentId) {
-    webAppUrl = 'https://script.google.com/macros/s/' + deployment.deploymentId + '/exec';
-  }
-
   const reg = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID')).getSheetByName(MANAGER_SHEET_NAME);
-  reg.appendRow([name,spreadsheetId,ss.getUrl(),project.scriptId,webAppUrl,editors.join(','),new Date()]);
-  return {name,spreadsheetId,spreadsheetUrl:ss.getUrl(),scriptId:project.scriptId,webAppUrl,editors};
-}
-
-function deleteDatabase_(spreadsheetId) {
-  setupManager();
-  const regSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID'));
-  const reg = regSs.getSheetByName(MANAGER_SHEET_NAME);
-  const values = reg.getDataRange().getValues();
-  let row = -1;
-  for (let i=1;i<values.length;i++) {
-    if (String(values[i][1] || '') === spreadsheetId) {
-      row = i + 1;
-      break;
-    }
-  }
-  if (row < 0) throw new Error('指定されたDBがDB管理台帳に見つかりません。');
-
-  // スプレッドシートをゴミ箱に移動
-  try {
-    DriveApp.getFileById(spreadsheetId).setTrashed(true);
-  } catch(err) {}
-
-  // 台帳から削除
-  reg.deleteRow(row);
-  return true;
-}
-
-function addUserToDatabase_(spreadsheetId, email) {
-  setupManager();
-  const regSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('REGISTRY_SHEET_ID'));
-  const reg = regSs.getSheetByName(MANAGER_SHEET_NAME);
-  const values = reg.getDataRange().getValues();
-  let row = -1;
-  let record = null;
-  for (let i=1;i<values.length;i++) {
-    if (String(values[i][1] || '') === spreadsheetId) {
-      row = i + 1;
-      record = {
-        name:String(values[i][0] || ''),
-        scriptId:String(values[i][3] || ''),
-        webAppUrl:String(values[i][4] || ''),
-        editors:String(values[i][5] || '')
-      };
-      break;
-    }
-  }
-  if (row < 0 || !record) throw new Error('指定されたDBがDB管理台帳に見つかりません。');
-
-  const currentEditors = record.editors.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
-  const ownerEmail = String(SpreadsheetApp.openById(spreadsheetId).getOwner().getEmail() || '').toLowerCase();
-  if (email === ownerEmail) throw new Error('このメールアドレスはDBの所有者です。追加する必要はありません。');
-  if (currentEditors.includes(email)) throw new Error('このユーザーはすでに追加されています。');
-
-  try {
-    DriveApp.getFileById(spreadsheetId).addEditor(email);
-  } catch (err) {
-    throw new Error('Googleスプレッドシートの共有設定に失敗しました：'+String(err.message || err));
-  }
-
-  const newEditors = currentEditors.concat(email);
-  const allowedUsers = Array.from(new Set([ownerEmail].concat(newEditors).filter(Boolean)));
-
-  if (!record.scriptId) throw new Error('DBのScript IDがありません。');
-  apiUpdateContent_(record.scriptId, getDbCodeTemplate_(allowedUsers), record.name);
-  const version = apiCreateVersion_(record.scriptId, '利用者追加：'+email);
-  const deployment = apiCreateDeployment_(record.scriptId, version.versionNumber, record.name+' 利用者追加');
-
-  let webAppUrl = record.webAppUrl;
-  if (deployment.entryPoints && deployment.entryPoints[0] && deployment.entryPoints[0].webApp) {
-    webAppUrl = deployment.entryPoints[0].webApp.url || record.webAppUrl;
-  }
-  if (!webAppUrl && deployment.deploymentId) {
-    webAppUrl = 'https://script.google.com/macros/s/' + deployment.deploymentId + '/exec';
-  }
-
-  reg.getRange(row, 5).setValue(webAppUrl);
-  reg.getRange(row, 6).setValue(newEditors.join(','));
+  reg.appendRow([name,spreadsheetId,ss.getUrl(),'','',editors.join(','),new Date()]);
 
   return {
-    name:record.name,
-    spreadsheetId:spreadsheetId,
-    spreadsheetUrl:'https://docs.google.com/spreadsheets/d/'+spreadsheetId+'/edit',
-    scriptId:record.scriptId,
-    webAppUrl:webAppUrl,
-    editors:newEditors
+    name, spreadsheetId, spreadsheetUrl:ss.getUrl(),
+    scriptId:'', webAppUrl:'', editors
   };
 }
 
-function initializeDatabase_(ss) {
-  let items = ss.getSheetByName('Items');
-  if (!items) items = ss.insertSheet('Items');
-  items.clear();
-  const headers = ['id','name','spec','quantity','image','location','obtained','expiry','store','price','memo','createdAt','updatedAt'];
-  items.getRange(1,1,1,headers.length).setValues([headers]);
-  items.setFrozenRows(1);
-  items.getRange(1,1,1,headers.length).setFontWeight('bold');
-
-  let settings = ss.getSheetByName('Settings');
-  if (!settings) settings = ss.insertSheet('Settings');
-  settings.clear();
-  settings.getRange('A1:B3').setValues([
-    ['key','value'],
-    ['locations',JSON.stringify(DEFAULT_LOCATIONS)],
-    ['stores',JSON.stringify(DEFAULT_STORES)]
-  ]);
-  settings.setFrozenRows(1);
-  const first = ss.getSheetByName('Sheet1');
-  if (first && first.getSheetId() !== items.getSheetId() && first.getLastRow() === 0) ss.deleteSheet(first);
-}
-
-function apiFetch_(url, method, body) {
-  const params = {method:method || 'get', headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken()}, muteHttpExceptions:true};
-  if (body !== undefined) {
-    params.contentType = 'application/json';
-    params.payload = JSON.stringify(body);
-  }
-  const res = UrlFetchApp.fetch(url, params);
-  const code = res.getResponseCode();
-  const text = res.getContentText();
-  if (code < 200 || code >= 300) throw new Error('Apps Script API '+code+': '+text);
-  return JSON.parse(text);
-}
-
-function apiCreateProject_(title, parentId) {
-  return apiFetch_('https://script.googleapis.com/v1/projects','post',{title:title,parentId:parentId});
-}
-
-function apiUpdateContent_(scriptId, code, title) {
-  const manifest = {
-    timeZone: Session.getScriptTimeZone() || 'Asia/Tokyo',
-    dependencies: {},
-    exceptionLogging: 'STACKDRIVER',
-    runtimeVersion: 'V8',
-    webapp: {executeAs:'USER_DEPLOYING', access:'ANYONE'}
-  };
-  const files = [
-    {name:'appsscript',type:'JSON',source:JSON.stringify(manifest)},
-    {name:'Code',type:'SERVER_JS',source:code}
-  ];
-  return apiFetch_('https://script.googleapis.com/v1/projects/'+encodeURIComponent(scriptId)+'/content','put',{files:files});
-}
-
-function apiCreateVersion_(scriptId, description) {
-  return apiFetch_('https://script.googleapis.com/v1/projects/'+encodeURIComponent(scriptId)+'/versions','post',{description:description});
-}
-
-function apiCreateDeployment_(scriptId, versionNumber, description) {
-  return apiFetch_('https://script.googleapis.com/v1/projects/'+encodeURIComponent(scriptId)+'/deployments','post',{
-    versionNumber:versionNumber,
-    manifestFileName:'appsscript',
-    description:description
-  });
-}
-
-function output_(obj, prefix) {
-  const json = JSON.stringify(obj);
-  if (prefix) {
-    if (!/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(prefix)) throw new Error('prefix is invalid');
-    return ContentService.createTextOutput(prefix+'('+json+')').setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
-}
-
-function getDbCodeTemplate_(allowedUsers) {
-  return `/**
- * 備品管理：DBごとのスプレッドシートに自動配置されるCode.gs
- */
-
-const ITEMS_SHEET = 'Items';
-const SETTINGS_SHEET = 'Settings';
-const ITEM_HEADERS = ['id','name','spec','quantity','image','location','obtained','expiry','store','price','memo','createdAt','updatedAt'];
-const ALLOWED_USERS = __ALLOWED_USERS__;
-
-function assertUser_() {
-  const email = String(Session.getActiveUser().getEmail() || '').toLowerCase();
-  if (!email) throw new Error('Googleアカウントを確認できません。DBのWebアプリにはGoogleアカウントでログインしてアクセスしてください。');
-  if (ALLOWED_USERS.length && !ALLOWED_USERS.includes(email)) throw new Error('このDBを利用する権限がありせん：'+email);
-  return email;
-}
-
-function doGet(e) {
-  assertUser_();
-  const p = e && e.parameter ? e.parameter : {};
-  const op = p.op || 'all';
-  let result;
-  try {
-    if (op === 'all') result = getAll_();
-    else if (op === 'health') result = {ok:true,db:SpreadsheetApp.getActiveSpreadsheet().getName(),time:new Date().toISOString()};
-    else throw new Error('不明な操作です: '+op);
-  } catch(err) {
-    result = {ok:false,error:String(err && err.message ? err.message : err)};
-  }
-  return output_(result,p.prefix);
-}
-
-function doPost(e) {
-  let result;
-  try {
-    const p = e && e.parameter ? e.parameter : {};
-    const payload = p.payload ? JSON.parse(p.payload) : p;
-    const action = payload.action || '';
-    if (action === 'saveItem') result = saveItem_(payload.item);
-    else if (action === 'deleteItem') result = deleteItem_(String(payload.id));
-    else if (action === 'saveSettings') result = saveSettings_(payload.settings || {});
-    else if (action === 'saveAll') result = saveAll_(payload);
-    else throw new Error('不明な書き込み操作です: '+action);
-  } catch(err) {
-    result = {ok:false,error:String(err && err.message ? err.message : err)};
-  }
-  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-}
-
-function getAll_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+function getAll_(spreadsheetId) {
+  const ss = SpreadsheetApp.openById(spreadsheetId);
   const sh = ss.getSheetByName(ITEMS_SHEET);
-  const settings = readSettings_();
-  if (!sh || sh.getLastRow() < 2) return {ok:true,dbName:ss.getName(),settings:settings,items:[]};
+  const settings = readSettings_(ss);
+  if (!sh || sh.getLastRow() < 2) return {ok:true,dbName:ss.getName(),spreadsheetId:ss.getId(),settings:settings,items:[]};
   const values = sh.getRange(2,1,sh.getLastRow()-1,ITEM_HEADERS.length).getValues();
   const items = values.filter(r=>r[0] !== '').map(rowToItem_);
   return {ok:true,dbName:ss.getName(),spreadsheetId:ss.getId(),settings:settings,items:items};
@@ -336,12 +129,12 @@ function itemToRow_(item) {
   return ITEM_HEADERS.map(h=>item && item[h] !== undefined ? item[h] : '');
 }
 
-function saveItem_(item) {
+function saveItem_(spreadsheetId, item) {
   if (!item || !item.id) throw new Error('備品IDがありません。');
   const lock = LockService.getDocumentLock();
   lock.waitLock(15000);
   try {
-    const sh = getItemsSheet_();
+    const sh = getItemsSheet_(spreadsheetId);
     const id = String(item.id);
     const last = sh.getLastRow();
     if (last >= 2) {
@@ -358,11 +151,11 @@ function saveItem_(item) {
   } finally { lock.releaseLock(); }
 }
 
-function deleteItem_(id) {
+function deleteItem_(spreadsheetId, id) {
   const lock = LockService.getDocumentLock();
   lock.waitLock(15000);
   try {
-    const sh = getItemsSheet_();
+    const sh = getItemsSheet_(spreadsheetId);
     const last = sh.getLastRow();
     if (last < 2) return {ok:true,deleted:false};
     const ids = sh.getRange(2,1,last-1,1).getValues();
@@ -373,8 +166,8 @@ function deleteItem_(id) {
   } finally { lock.releaseLock(); }
 }
 
-function saveSettings_(settings) {
-  const sh = getSettingsSheet_();
+function saveSettings_(spreadsheetId, settings) {
+  const sh = getSettingsSheet_(spreadsheetId);
   sh.getRange('A1:B3').setValues([
     ['key','value'],
     ['locations',JSON.stringify(Array.isArray(settings.locations)?settings.locations:[])],
@@ -383,21 +176,21 @@ function saveSettings_(settings) {
   return {ok:true};
 }
 
-function saveAll_(payload) {
+function saveAll_(spreadsheetId, payload) {
   const lock = LockService.getDocumentLock();
   lock.waitLock(20000);
   try {
-    const sh = getItemsSheet_();
+    const sh = getItemsSheet_(spreadsheetId);
     if (sh.getLastRow() > 1) sh.getRange(2,1,sh.getLastRow()-1,ITEM_HEADERS.length).clearContent();
     const items = Array.isArray(payload.items) ? payload.items : [];
     if (items.length) sh.getRange(2,1,items.length,ITEM_HEADERS.length).setValues(items.map(itemToRow_));
-    saveSettings_(payload.settings || {});
+    saveSettings_(spreadsheetId, payload.settings || {});
     return {ok:true,count:items.length};
   } finally { lock.releaseLock(); }
 }
 
-function readSettings_() {
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SETTINGS_SHEET);
+function readSettings_(ss) {
+  const sh = ss.getSheetByName(SETTINGS_SHEET);
   if (!sh || sh.getLastRow() < 3) return {locations:[],stores:[]};
   const rows = sh.getRange(2,1,Math.min(2,sh.getLastRow()-1),2).getValues();
   const out = {locations:[],stores:[]};
@@ -411,8 +204,8 @@ function readSettings_() {
   return out;
 }
 
-function getItemsSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+function getItemsSheet_(spreadsheetId) {
+  const ss = SpreadsheetApp.openById(spreadsheetId);
   let sh = ss.getSheetByName(ITEMS_SHEET);
   if (!sh) {
     sh = ss.insertSheet(ITEMS_SHEET);
@@ -421,20 +214,40 @@ function getItemsSheet_() {
   return sh;
 }
 
-function getSettingsSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+function getSettingsSheet_(spreadsheetId) {
+  const ss = SpreadsheetApp.openById(spreadsheetId);
   let sh = ss.getSheetByName(SETTINGS_SHEET);
   if (!sh) sh = ss.insertSheet(SETTINGS_SHEET);
   return sh;
 }
 
-function output_(obj,prefix) {
+function initializeDatabase_(ss) {
+  let items = ss.getSheetByName(ITEMS_SHEET);
+  if (!items) items = ss.insertSheet(ITEMS_SHEET);
+  items.clear();
+  const headers = ['id','name','spec','quantity','image','location','obtained','expiry','store','price','memo','createdAt','updatedAt'];
+  items.getRange(1,1,1,headers.length).setValues([headers]);
+  items.setFrozenRows(1);
+  items.getRange(1,1,1,headers.length).setFontWeight('bold');
+
+  let settings = ss.getSheetByName(SETTINGS_SHEET);
+  if (!settings) settings = ss.insertSheet(SETTINGS_SHEET);
+  settings.clear();
+  settings.getRange('A1:B3').setValues([
+    ['key','value'],
+    ['locations',JSON.stringify(DEFAULT_LOCATIONS)],
+    ['stores',JSON.stringify(DEFAULT_STORES)]
+  ]);
+  settings.setFrozenRows(1);
+  const first = ss.getSheetByName('Sheet1');
+  if (first && first.getSheetId() !== items.getSheetId() && first.getLastRow() === 0) ss.deleteSheet(first);
+}
+
+function output_(obj, prefix) {
   const json = JSON.stringify(obj);
   if (prefix) {
     if (!/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(prefix)) throw new Error('prefix is invalid');
     return ContentService.createTextOutput(prefix+'('+json+')').setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
-}
-`.replace('__ALLOWED_USERS__', JSON.stringify(allowedUsers || []));
 }
