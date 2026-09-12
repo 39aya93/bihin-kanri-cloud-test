@@ -14,7 +14,7 @@
   .item-card{border:1px solid #374151;border-radius:.5rem;padding:1rem;background:#111827;color:#f8fafc;}
   .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
   .item-grid .item-card img{width:100%;height:140px;object-fit:cover;border-radius:.35rem;background:#1f2937;}
-  
+
   /* 画像ありリスト形式 */
   .item-list{display:flex;flex-direction:column;gap:.75rem;}
   .item-list > .item-card{display:flex;gap:1rem;align-items:flex-start;padding:1rem;}
@@ -32,8 +32,8 @@
     color:#94a3b8;
     font-size:.75rem;
   }
-  
-  /* 画像なしリスト形式（番号付き・コンパクト） */
+
+  /* 画像なしリスト形式（番号付きコンパクト） */
   .item-list-noimg{display:flex !important;flex-direction:column !important;gap:.5rem !important;}
   .item-list-noimg > .item-card{
     display:flex !important;
@@ -42,22 +42,33 @@
     padding:.75rem 1rem !important;
   }
   .item-list-noimg > .item-card > .item-number{
-    width:32px;
-    height:32px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#1f6feb;
-    color:#fff;
-    border-radius:50%;
-    font-size:.8rem;
-    font-weight:700;
-    flex-shrink:0;
-    margin-top:.15rem;
+    flex: 0 0 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    background:#1f6feb !important;
+    color:#fff !important;
+    border-radius:50% !important;
+    font-size:.7rem !important;
+    font-weight:700 !important;
+    margin-top:.15rem !important;
+    box-sizing:border-box !important;
+    line-height:1 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    letter-spacing:-0.03em !important;
+    white-space:nowrap !important;
+    text-align:center !important;
+    border:none !important;
+    aspect-ratio:1 / 1 !important;
   }
   .item-list-noimg > .item-card > div{flex:1;min-width:0;}
   .list-summary{text-align:right;padding:.75rem 1rem;background:#1e293b;border:1px solid #374151;border-radius:.5rem;margin-top:.5rem;color:#e2e8f0;font-size:.9rem;}
-  
+
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:1rem;}
   .modal-overlay.open{display:flex !important;}
   .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
@@ -350,7 +361,7 @@ function updateCurrentDbDisplay(){
   if (activeDb) {
     $('currentDbName').textContent = activeDb.name;
     $('currentDbDisplay').textContent = activeDb.name;
-    $('currentDbEditors').textContent = activeDb.editors ? '編集者: ' + activeDb.editors : '編集者なし';
+    $('currentDbEditors').textContent = activeDb.editors ? '編集者: ' + activeDb.editors : '集者なし';
   } else {
     $('currentDbName').textContent = 'DB未選択';
     $('currentDbDisplay').textContent = '未選択';
@@ -491,7 +502,7 @@ async function createDb(){
   try {
     const res = await apiGet('create', { name, editors: editors.join(',') });
     if (!res.ok) throw new Error(res.error || '作成失敗');
-    toast('DBを作成しました: ' + name);
+    toast('DBを作成ました: ' + name);
     closeNewDbModal();
     $('newDbForm').reset();
     await refreshDbListForManage();
