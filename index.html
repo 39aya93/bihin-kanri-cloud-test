@@ -18,7 +18,7 @@
   .item-list .item-card img{width:80px;height:80px;flex-shrink:0;}
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:1rem;}
   .modal-overlay.open{display:flex !important;}
-  .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
+  .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
   .modal h3{margin-top:0;}
   .close-btn{position:absolute;top:.8rem;right:1rem;background:none;border:none;font-size:1.5rem;color:#9ca3af;cursor:pointer;}
   .db-screen{position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
@@ -27,6 +27,7 @@
   .db-select-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;width:100%;max-width:800px;}
   .db-select-card{background:#1e293b;border:2px solid #334155;border-radius:.75rem;padding:1.5rem;cursor:pointer;transition:.2s;text-align:left;}
   .db-select-card:hover{border-color:#1f6feb;background:#1e293b;}
+  .db-select-card.active{border-color:#22c55e;background:#064e3b;}
   .db-select-card .db-name{font-weight:700;font-size:1.1rem;margin-bottom:.25rem;}
   .db-select-card .db-meta{font-size:.8rem;color:#94a3b8;}
   .empty-state{text-align:center;padding:3rem 1rem;color:#9ca3af;}
@@ -41,12 +42,21 @@
   @media(max-width:640px){.db-manage-grid{grid-template-columns:1fr;}}
   .toast{position:fixed;bottom:1rem;right:1rem;background:#1f6feb;color:#fff;padding:.75rem 1.25rem;border-radius:.5rem;box-shadow:0 4px 12px rgba(0,0,0,.3);transform:translateY(120%);transition:.3s;z-index:100000;}
   .toast.show{transform:translateY(0);}
+  .current-db-bar{background:#1e293b;border:1px solid #374151;border-radius:.5rem;padding:.75rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;}
+  .current-db-label{color:#94a3b8;font-size:.85rem;}
+  .current-db-name{color:#e2e8f0;font-weight:700;font-size:1.05rem;}
+  .manage-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+  @media(max-width:640px){.manage-layout{grid-template-columns:1fr;}}
+  .manage-section{margin-bottom:1rem;}
+  .manage-section h4{margin:0 0 .5rem;color:#e2e8f0;font-size:1rem;border-bottom:1px solid #374151;padding-bottom:.25rem;}
+  .user-list{font-size:.85rem;color:#94a3b8;max-height:120px;overflow-y:auto;}
+  .user-list-item{padding:.2rem 0;border-bottom:1px solid #334155;}
 </style>
 <script src="config.js"></script>
 </head>
 <body>
 
-<!-- DB選択画面 -->
+<!-- DB選択画面（初回のみ） -->
 <div id="dbScreen" class="db-screen">
   <h2>備品管理クラウド</h2>
   <p>管理するデータベースを選択してください</p>
@@ -62,13 +72,21 @@
     <div style="font-weight:700;font-size:1.1rem;">備品管理</div>
     <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
       <div class="db-badge"><span class="dot"></span><span id="currentDbName">DB未選択</span></div>
-      <button class="secondary outline" onclick="showDbSelector()">DBを選択</button>
+      <button class="secondary outline" onclick="showDbManageModal()">DB管理</button>
     </div>
   </nav>
 
+  <div class="current-db-bar">
+    <div>
+      <span class="current-db-label">現在のDB：</span>
+      <span class="current-db-name" id="currentDbDisplay">未選択</span>
+    </div>
+    <div style="font-size:.8rem;color:#94a3b8;" id="currentDbEditors"></div>
+  </div>
+
   <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;">
     <button onclick="showItemModal()">+ 備品を登録</button>
-    <button class="secondary" onclick="loadCurrentDb()">一覧見る</button>
+    <button class="secondary" onclick="loadCurrentDb()">一覧を見る</button>
   </div>
 
   <div class="search-row">
@@ -90,21 +108,6 @@
   <div style="margin-top:2rem;">
     <button class="secondary outline" onclick="clearCache()">キャッシュをクリア</button>
   </div>
-
-  <details style="margin-top:2rem;">
-    <summary style="font-weight:700;">DB管理（初期設定・管理者用）</summary>
-    <div style="padding-top:1rem;">
-      <div class="db-manage-grid">
-        <button onclick="showNewDbModal()">+ 新しいDB</button>
-        <button class="secondary" onclick="saveCurrentDb()">現在のDBを保存</button>
-        <button class="secondary" onclick="refreshDbList()">DB一覧を更新</button>
-        <button class="secondary" onclick="showAddUserModal()">利用者を追加</button>
-      </div>
-      <div style="margin-top:1rem;">
-        <button class="danger outline" onclick="deleteCurrentDb()">選択したDBを削除</button>
-      </div>
-    </div>
-  </details>
 </div>
 
 <!-- 備品登録・編集モーダル -->
@@ -156,15 +159,52 @@
   </div>
 </div>
 
-<!-- 利用者追加モーダル -->
-<div id="addUserModal" class="modal-overlay" onclick="if(event.target===this)closeAddUserModal()">
-  <div class="modal">
-    <button class="close-btn" onclick="closeAddUserModal()">&times;</button>
-    <h3>利用者を追加</h3>
-    <form onsubmit="event.preventDefault();addUser();">
-      <label>Googleアカウント（メール） *<input type="email" id="addUserEmail" required placeholder="example@gmail.com"></label>
-      <button type="submit" style="width:100%;">追加</button>
-    </form>
+<!-- DB管理モーダル -->
+<div id="dbManageModal" class="modal-overlay" onclick="if(event.target===this)closeDbManageModal()">
+  <div class="modal" style="max-width:800px;">
+    <button class="close-btn" onclick="closeDbManageModal()">&times;</button>
+    <h3>DB管理</h3>
+    <div class="manage-layout">
+      <div>
+        <div class="manage-section">
+          <h4>DB一覧</h4>
+          <div id="manageDbList" style="max-height:250px;overflow-y:auto;"></div>
+        </div>
+        <div style="margin-top:1rem;">
+          <button onclick="showNewDbModal(); closeDbManageModal();" style="width:100%;">+ 新しいDBを作成</button>
+        </div>
+        <div style="margin-top:.5rem;">
+          <button class="secondary outline" onclick="refreshDbListForManage()" style="width:100%;">一覧を更新</button>
+        </div>
+      </div>
+      <div>
+        <div class="manage-section">
+          <h4>選択中のDB</h4>
+          <div id="selectedDbInfo" style="background:#0f172a;padding:1rem;border-radius:.5rem;margin-bottom:1rem;">
+            <div style="font-weight:700;font-size:1.1rem;margin-bottom:.5rem;" id="selectedDbName">DB未選択</div>
+            <div style="font-size:.8rem;color:#94a3b8;margin-bottom:.25rem;" id="selectedDbId"></div>
+            <div style="font-size:.8rem;color:#94a3b8;margin-bottom:.5rem;" id="selectedDbEditors"></div>
+            <button onclick="switchToSelectedDb()" id="btnSwitchDb" disabled>このDBを開く</button>
+          </div>
+        </div>
+        <div class="manage-section">
+          <h4>利用者を追加</h4>
+          <form onsubmit="event.preventDefault();addUserFromManage();">
+            <label>Googleアカウント（メール） *<input type="email" id="manageAddUserEmail" required placeholder="example@gmail.com"></label>
+            <button type="submit" id="btnAddUser" disabled>追加</button>
+          </form>
+        </div>
+        <div class="manage-section">
+          <h4>利用者一覧</h4>
+          <div id="manageUserList" class="user-list">
+            <div style="color:#6b7280;">DBを選択してください</div>
+          </div>
+        </div>
+        <div style="margin-top:1rem;">
+          <button class="danger outline" onclick="deleteSelectedDb()" id="btnDeleteDb" disabled>選択したDBを削除</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -180,6 +220,7 @@ function getManagerUrl(){
 /* ================= 状態 ================= */
 let databases = [];
 let activeDb = null;
+let selectedManageDb = null;
 let items = [];
 let viewMode = 'grid';
 let settings = {locations:[], stores:[]};
@@ -211,7 +252,7 @@ async function apiGet(op, extra = {}) {
 
 async function apiPost(action, data = {}) {
   const managerUrl = getManagerUrl();
-  if (!managerUrl) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
+  if (!managerUrl) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください');
   if (!activeDb || !activeDb.spreadsheetId) throw new Error('DBが選択されていません。');
   const payload = JSON.stringify({ action, spreadsheetId: activeDb.spreadsheetId, ...data });
   const body = toQueryString({ payload });
@@ -249,36 +290,154 @@ function selectDb(spreadsheetId){
   if (!db) { toast('DBが見つかりません'); return; }
   activeDb = db;
   localStorage.setItem('lastDbId', db.spreadsheetId);
-  $('currentDbName').textContent = db.name;
+  updateCurrentDbDisplay();
   $('dbScreen').style.display = 'none';
   show('mainScreen');
   loadCurrentDb();
 }
 
-function showDbSelector(){
-  refreshDbList().then(() => {
-    $('dbScreen').style.display = 'flex';
-    hide('mainScreen');
-  });
+function updateCurrentDbDisplay(){
+  if (activeDb) {
+    $('currentDbName').textContent = activeDb.name;
+    $('currentDbDisplay').textContent = activeDb.name;
+    $('currentDbEditors').textContent = activeDb.editors ? '編集者: ' + activeDb.editors : '編集者なし';
+  } else {
+    $('currentDbName').textContent = 'DB未選択';
+    $('currentDbDisplay').textContent = '未選択';
+    $('currentDbEditors').textContent = '';
+  }
 }
 
-/* ================= DB管理 ================= */
-async function refreshDbList(){
+/* ================= DB管理モーダル ================= */
+async function showDbManageModal(){
+  await refreshDbListForManage();
+  openModal('dbManageModal');
+}
+
+function closeDbManageModal(){
+  closeModal('dbManageModal');
+}
+
+async function refreshDbListForManage(){
   try {
     const res = await apiGet('list');
     if (!res.ok) throw new Error(res.error || 'DB一覧取得失敗');
     databases = res.databases || [];
-    renderDbSelector();
+    renderManageDbList();
     toast('DB一覧を更新しました。' + databases.length + '件');
   } catch (err) {
     toast('DB一覧更新エラー: ' + err.message);
   }
 }
 
+function renderManageDbList(){
+  const container = $('manageDbList');
+  if (!databases.length) {
+    container.innerHTML = '<div style="color:#94a3b8;padding:1rem;">DBがありません</div>';
+    return;
+  }
+  container.innerHTML = databases.map(db => {
+    const isActive = selectedManageDb && selectedManageDb.spreadsheetId === db.spreadsheetId;
+    const isCurrent = activeDb && activeDb.spreadsheetId === db.spreadsheetId;
+    return `
+      <div class="db-select-card ${isActive ? 'active' : ''}" onclick="selectManageDb('${db.spreadsheetId}')" style="margin-bottom:.5rem;padding:1rem;">
+        <div class="db-name">${escapeHtml(db.name)} ${isCurrent ? '<span style="color:#22c55e;font-size:.75rem;">[現在]</span>' : ''}</div>
+        <div class="db-meta">${db.editors || '編集者なし'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectManageDb(spreadsheetId){
+  const db = databases.find(d => d.spreadsheetId === spreadsheetId);
+  if (!db) return;
+  selectedManageDb = db;
+  $('selectedDbName').textContent = db.name;
+  $('selectedDbId').textContent = 'ID: ' + db.spreadsheetId;
+  $('selectedDbEditors').textContent = '編集者: ' + (db.editors || 'なし');
+  $('btnSwitchDb').disabled = false;
+  $('btnAddUser').disabled = false;
+  $('btnDeleteDb').disabled = false;
+  renderManageDbList();
+  renderManageUserList();
+}
+
+function renderManageUserList(){
+  const container = $('manageUserList');
+  if (!selectedManageDb || !selectedManageDb.editors) {
+    container.innerHTML = '<div style="color:#6b7280;">利用者がいません</div>';
+    return;
+  }
+  const editors = selectedManageDb.editors.split(',').map(s => s.trim()).filter(Boolean);
+  if (!editors.length) {
+    container.innerHTML = '<div style="color:#6b7280;">利用者がいません</div>';
+    return;
+  }
+  container.innerHTML = editors.map(email => `
+    <div class="user-list-item">${escapeHtml(email)}</div>
+  `).join('');
+}
+
+function switchToSelectedDb(){
+  if (!selectedManageDb) return;
+  activeDb = selectedManageDb;
+  localStorage.setItem('lastDbId', activeDb.spreadsheetId);
+  updateCurrentDbDisplay();
+  closeDbManageModal();
+  loadCurrentDb();
+  toast('「' + activeDb.name + '」を開きました');
+}
+
+async function addUserFromManage(){
+  const email = $('manageAddUserEmail').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { toast('正しいメールアドレスを入力してください'); return; }
+  if (!selectedManageDb) { toast('DBを選択してください'); return; }
+  try {
+    const res = await apiGet('addUser', { spreadsheetId: selectedManageDb.spreadsheetId, email });
+    if (!res.ok) throw new Error(res.error || '加失敗');
+    toast('利用者を追加しました: ' + email);
+    $('manageAddUserEmail').value = '';
+    await refreshDbListForManage();
+    const db = databases.find(d => d.spreadsheetId === selectedManageDb.spreadsheetId);
+    if (db) selectManageDb(db.spreadsheetId);
+  } catch (err) {
+    toast('追加エラー: ' + err.message);
+  }
+}
+
+async function deleteSelectedDb(){
+  if (!selectedManageDb) { toast('DBを選択してください'); return; }
+  if (!confirm('「' + selectedManageDb.name + '」を削除しますか？スプレッドシートもゴミ箱に移動します。')) return;
+  try {
+    const res = await apiGet('delete', { spreadsheetId: selectedManageDb.spreadsheetId });
+    if (!res.ok) throw new Error(res.error || '削除失敗');
+    toast('DBを削除しました');
+    if (activeDb && activeDb.spreadsheetId === selectedManageDb.spreadsheetId) {
+      activeDb = null;
+      items = [];
+      localStorage.removeItem('lastDbId');
+      updateCurrentDbDisplay();
+      renderItems();
+    }
+    selectedManageDb = null;
+    $('selectedDbName').textContent = 'DB未選択';
+    $('selectedDbId').textContent = '';
+    $('selectedDbEditors').textContent = '';
+    $('btnSwitchDb').disabled = true;
+    $('btnAddUser').disabled = true;
+    $('btnDeleteDb').disabled = true;
+    $('manageUserList').innerHTML = '<div style="color:#6b7280;">DBを選択してください</div>';
+    await refreshDbListForManage();
+  } catch (err) {
+    toast('削除エラー: ' + err.message);
+  }
+}
+
+/* ================= DB作成 ================= */
 async function createDb(){
   const name = $('newDbName').value.trim();
   const editorsRaw = $('newDbEditors').value.trim();
-  if (!name) { toast('DB名を入力してください'); return; }
+  if (!name) { toast('DB名を入してください'); return; }
   const editors = editorsRaw ? editorsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
   try {
     const res = await apiGet('create', { name, editors: editors.join(',') });
@@ -286,49 +445,21 @@ async function createDb(){
     toast('DBを作成しました: ' + name);
     closeNewDbModal();
     $('newDbForm').reset();
-    await refreshDbList();
+    await refreshDbListForManage();
     if (res.database) {
       activeDb = res.database;
       localStorage.setItem('lastDbId', res.database.spreadsheetId);
-      $('currentDbName').textContent = res.database.name;
-      $('dbScreen').style.display = 'none';
-      show('mainScreen');
-      items = [];
-      renderItems();
+      updateCurrentDbDisplay();
+      if (!$('mainScreen').classList.contains('hidden')) {
+        items = [];
+        renderItems();
+      } else {
+        $('dbScreen').style.display = 'none';
+        show('mainScreen');
+      }
     }
   } catch (err) {
     toast('新しいDBの作成に失敗しました。\n' + err.message);
-  }
-}
-
-async function deleteCurrentDb(){
-  if (!activeDb) { toast('DBが選択されていません'); return; }
-  if (!confirm('「' + activeDb.name + '」を削除しますか？スプッドシートもゴミ箱に移動します。')) return;
-  try {
-    const res = await apiGet('delete', { spreadsheetId: activeDb.spreadsheetId });
-    if (!res.ok) throw new Error(res.error || '削除失敗');
-    toast('DBを削除しました');
-    activeDb = null;
-    items = [];
-    localStorage.removeItem('lastDbId');
-    initDbScreen();
-  } catch (err) {
-    toast('削除エラー: ' + err.message);
-  }
-}
-
-async function addUser(){
-  const email = $('addUserEmail').value.trim().toLowerCase();
-  if (!email || !email.includes('@')) { toast('正しいメールアドレスを入力してください'); return; }
-  if (!activeDb) { toast('DBが選択されていません'); return; }
-  try {
-    const res = await apiGet('addUser', { spreadsheetId: activeDb.spreadsheetId, email });
-    if (!res.ok) throw new Error(res.error || '追加失敗');
-    toast('利用者を追加しました: ' + email);
-    closeAddUserModal();
-    $('addUserEmail').value = '';
-  } catch (err) {
-    toast('追加エラー: ' + err.message);
   }
 }
 
@@ -391,17 +522,6 @@ async function deleteItem(id){
     toast('削除しました');
   } catch (err) {
     toast('削除エラー: ' + err.message);
-  }
-}
-
-async function saveCurrentDb(){
-  if (!activeDb) { toast('DBが選択されていません'); return; }
-  try {
-    const res = await apiPost('saveAll', { items, settings });
-    if (!res.ok) throw new Error(res.error || '保存失敗');
-    toast('クラウドに保存しました。' + (res.count || items.length) + '件');
-  } catch (err) {
-    toast('保存エラー: ' + err.message);
   }
 }
 
@@ -471,8 +591,6 @@ function showItemModal(){ $('itemModalTitle').textContent = '+ 備品を登録';
 function closeItemModal(){ closeModal('itemModal'); }
 function showNewDbModal(){ openModal('newDbModal'); }
 function closeNewDbModal(){ closeModal('newDbModal'); }
-function showAddUserModal(){ if(!activeDb){toast('DBを選択してください');return;} openModal('addUserModal'); }
-function closeAddUserModal(){ closeModal('addUserModal'); }
 
 function editItem(it){
   $('itemModalTitle').textContent = '備品を編集';
@@ -518,7 +636,23 @@ window.addEventListener('DOMContentLoaded', () => {
     toast('config.js の MANAGER_URL を設定してください');
     return;
   }
-  initDbScreen();
+  const lastDbId = localStorage.getItem('lastDbId');
+  if (lastDbId) {
+    refreshDbListForManage().then(() => {
+      const db = databases.find(d => d.spreadsheetId === lastDbId);
+      if (db) {
+        activeDb = db;
+        updateCurrentDbDisplay();
+        $('dbScreen').style.display = 'none';
+        show('mainScreen');
+        loadCurrentDb();
+      } else {
+        initDbScreen();
+      }
+    });
+  } else {
+    initDbScreen();
+  }
 });
 </script>
 </body>
