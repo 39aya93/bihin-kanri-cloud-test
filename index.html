@@ -16,12 +16,12 @@
   .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
   .item-list .item-card{display:flex;gap:1rem;align-items:center;}
   .item-list .item-card img{width:80px;height:80px;flex-shrink:0;}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:1rem;}
-  .modal-overlay.open{display:flex;}
-  .modal{background:#111827;padding:1.5rem;border-radius:.75rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:1rem;}
+  .modal-overlay.open{display:flex !important;}
+  .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
   .modal h3{margin-top:0;}
   .close-btn{position:absolute;top:.8rem;right:1rem;background:none;border:none;font-size:1.5rem;color:#9ca3af;cursor:pointer;}
-  .db-screen{position:fixed;inset:0;background:#0f172a;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
+  .db-screen{position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
   .db-screen h2{margin-bottom:1rem;color:#e2e8f0;}
   .db-screen p{color:#94a3b8;margin-bottom:2rem;}
   .db-select-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;width:100%;max-width:800px;}
@@ -39,7 +39,7 @@
   .danger{color:#ef4444;}
   .db-manage-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
   @media(max-width:640px){.db-manage-grid{grid-template-columns:1fr;}}
-  .toast{position:fixed;bottom:1rem;right:1rem;background:#1f6feb;color:#fff;padding:.75rem 1.25rem;border-radius:.5rem;box-shadow:0 4px 12px rgba(0,0,0,.3);transform:translateY(120%);transition:.3s;z-index:3000;}
+  .toast{position:fixed;bottom:1rem;right:1rem;background:#1f6feb;color:#fff;padding:.75rem 1.25rem;border-radius:.5rem;box-shadow:0 4px 12px rgba(0,0,0,.3);transform:translateY(120%);transition:.3s;z-index:100000;}
   .toast.show{transform:translateY(0);}
 </style>
 <script src="config.js"></script>
@@ -68,7 +68,7 @@
 
   <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;">
     <button onclick="showItemModal()">+ 備品を登録</button>
-    <button class="secondary" onclick="loadCurrentDb()">一覧を見る</button>
+    <button class="secondary" onclick="loadCurrentDb()">一覧見る</button>
   </div>
 
   <div class="search-row">
@@ -303,7 +303,7 @@ async function createDb(){
 
 async function deleteCurrentDb(){
   if (!activeDb) { toast('DBが選択されていません'); return; }
-  if (!confirm('「' + activeDb.name + '」を削除しますか？スプレッドシートもゴミ箱に移動します。')) return;
+  if (!confirm('「' + activeDb.name + '」を削除しますか？スプッドシートもゴミ箱に移動します。')) return;
   try {
     const res = await apiGet('delete', { spreadsheetId: activeDb.spreadsheetId });
     if (!res.ok) throw new Error(res.error || '削除失敗');
@@ -471,7 +471,7 @@ function showItemModal(){ $('itemModalTitle').textContent = '+ 備品を登録';
 function closeItemModal(){ closeModal('itemModal'); }
 function showNewDbModal(){ openModal('newDbModal'); }
 function closeNewDbModal(){ closeModal('newDbModal'); }
-function showAddUserModal(){ if(!activeDb){toast('DBを選択してくさい');return;} openModal('addUserModal'); }
+function showAddUserModal(){ if(!activeDb){toast('DBを選択してください');return;} openModal('addUserModal'); }
 function closeAddUserModal(){ closeModal('addUserModal'); }
 
 function editItem(it){
