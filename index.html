@@ -167,7 +167,8 @@
     <div class="manage-layout">
       <div>
         <div class="manage-section">
-          <h4>DB一覧</h4>
+          <h4>DBを選択してください</h4>
+          <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.5rem;">カードをクリックしてDBを選択できます</div>
           <div id="manageDbList" style="max-height:250px;overflow-y:auto;"></div>
         </div>
         <div style="margin-top:1rem;">
@@ -349,9 +350,10 @@ function renderManageDbList(){
     const isActive = selectedManageDb && selectedManageDb.spreadsheetId === db.spreadsheetId;
     const isCurrent = activeDb && activeDb.spreadsheetId === db.spreadsheetId;
     return `
-      <div class="db-select-card ${isActive ? 'active' : ''}" onclick="selectManageDb('${db.spreadsheetId}')" style="margin-bottom:.5rem;padding:1rem;">
+      <div class="db-select-card ${isActive ? 'active' : ''}" onclick="selectManageDb('${db.spreadsheetId}')" style="margin-bottom:.5rem;padding:1rem;cursor:pointer;">
         <div class="db-name">${escapeHtml(db.name)} ${isCurrent ? '<span style="color:#22c55e;font-size:.75rem;">[現在]</span>' : ''}</div>
         <div class="db-meta">${db.editors || '編集者なし'}</div>
+        ${isActive ? '<div style="font-size:.75rem;color:#22c55e;margin-top:.25rem;">選択中</div>' : '<div style="font-size:.75rem;color:#6b7280;margin-top:.25rem;">クリックして選択</div>'}
       </div>
     `;
   }).join('');
