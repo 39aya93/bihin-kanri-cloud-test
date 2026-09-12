@@ -120,7 +120,7 @@
         <label>数量<input type="number" id="itemQty" value="1" min="0"></label>
         <label>場所
           <select id="itemLocation"><option value="">選択</option></select>
-          <input id="itemLocationCustom" placeholder="または新し場所" style="margin-top:.3rem;">
+          <input id="itemLocationCustom" placeholder="または新しい場所" style="margin-top:.3rem;">
         </label>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
@@ -171,8 +171,11 @@
 <div id="toast" class="toast"></div>
 
 <script>
-/* ================= 設定 ================= */
-var MANAGER_URL = (typeof CONFIG !== 'undefined' && CONFIG.MANAGER_URL) ? CONFIG.MANAGER_URL : '';
+/* ================= 設定（config.js の CONFIG を参照） ================= */
+function getManagerUrl(){
+  if (typeof CONFIG !== 'undefined' && CONFIG.MANAGER_URL) return CONFIG.MANAGER_URL;
+  return '';
+}
 
 /* ================= 状態 ================= */
 let databases = [];
@@ -185,6 +188,8 @@ let settings = {locations:[], stores:[]};
 function $(id){ return document.getElementById(id); }
 function show(id){ $(id).classList.remove('hidden'); }
 function hide(id){ $(id).classList.add('hidden'); }
+function openModal(id){ $(id).classList.add('open'); }
+function closeModal(id){ $(id).classList.remove('open'); }
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 function genId(){ return 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
 function fmtDate(d){ if(!d) return ''; const x=new Date(d); return x.getFullYear()+'-'+(String(x.getMonth()+1).padStart(2,'0'))+'-'+String(x.getDate()).padStart(2,'0'); }
@@ -196,19 +201,21 @@ function toQueryString(obj){
 
 /* ================= API通信 ================= */
 async function apiGet(op, extra = {}) {
-  if (!MANAGER_URL) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
+  const managerUrl = getManagerUrl();
+  if (!managerUrl) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
   const qs = toQueryString({op, ...extra});
-  const url = MANAGER_URL + (MANAGER_URL.includes('?') ? '&' : '?') + qs;
+  const url = managerUrl + (managerUrl.includes('?') ? '&' : '?') + qs;
   const res = await fetch(url, {method:'GET'});
   return res.json();
 }
 
 async function apiPost(action, data = {}) {
-  if (!MANAGER_URL) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
+  const managerUrl = getManagerUrl();
+  if (!managerUrl) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
   if (!activeDb || !activeDb.spreadsheetId) throw new Error('DBが選択されていません。');
   const payload = JSON.stringify({ action, spreadsheetId: activeDb.spreadsheetId, ...data });
   const body = toQueryString({ payload });
-  const res = await fetch(MANAGER_URL, {
+  const res = await fetch(managerUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body
@@ -430,7 +437,7 @@ function renderItems(){
   container.className = viewMode === 'grid' ? 'item-grid' : 'item-list';
   container.innerHTML = filtered.map(it => `
     <div class="item-card">
-      ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:.8rem;">画なし</div>`}
+      ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:.8rem;">画像なし</div>`}
       <div style="flex:1;">
         <div style="font-weight:700;margin-bottom:.25rem;">${escapeHtml(it.name)}</div>
         <div style="font-size:.8rem;color:#9ca3af;margin-bottom:.35rem;">
@@ -460,12 +467,12 @@ function escapeHtml(text){
 }
 
 /* ================= モーダル制御 ================= */
-function showItemModal(){ $('itemModalTitle').textContent = '+ 備品を登録'; $('itemForm').reset(); $('itemId').value=''; $('imagePreview').classList.add('hidden'); $('itemImageData').value=''; $('itemObtained').value=today(); show('itemModal'); }
-function closeItemModal(){ hide('itemModal'); }
-function showNewDbModal(){ show('newDbModal'); }
-function closeNewDbModal(){ hide('newDbModal'); }
-function showAddUserModal(){ if(!activeDb){toast('DBを選択してください');return;} show('addUserModal'); }
-function closeAddUserModal(){ hide('addUserModal'); }
+function showItemModal(){ $('itemModalTitle').textContent = '+ 備品を登録'; $('itemForm').reset(); $('itemId').value=''; $('imagePreview').classList.add('hidden'); $('itemImageData').value=''; $('itemObtained').value=today(); openModal('itemModal'); }
+function closeItemModal(){ closeModal('itemModal'); }
+function showNewDbModal(){ openModal('newDbModal'); }
+function closeNewDbModal(){ closeModal('newDbModal'); }
+function showAddUserModal(){ if(!activeDb){toast('DBを選択してくさい');return;} openModal('addUserModal'); }
+function closeAddUserModal(){ closeModal('addUserModal'); }
 
 function editItem(it){
   $('itemModalTitle').textContent = '備品を編集';
@@ -484,7 +491,7 @@ function editItem(it){
   $('itemImageData').value = it.image || '';
   if (it.image) { $('imagePreview').src = it.image; $('imagePreview').classList.remove('hidden'); }
   else { $('imagePreview').classList.add('hidden'); }
-  show('itemModal');
+  openModal('itemModal');
 }
 
 function previewImage(input){
@@ -507,7 +514,7 @@ function clearCache(){
 
 /* ================= 初期化 ================= */
 window.addEventListener('DOMContentLoaded', () => {
-  if (!MANAGER_URL) {
+  if (!getManagerUrl()) {
     toast('config.js の MANAGER_URL を設定してください');
     return;
   }
