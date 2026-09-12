@@ -195,12 +195,16 @@
       </div>
       <label style="color:#e2e8f0;font-weight:500;">画像</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.5rem;">
-        <label style="margin-bottom:0;font-size:.85rem;color:#e2e8f0;">ファイルから
-          <input type="file" id="itemImageFile" accept="image/*" onchange="previewImage(this)" style="font-size:.75rem;margin-top:.25rem;">
-        </label>
-        <label style="margin-bottom:0;font-size:.85rem;color:#e2e8f0;">カメラで撮影
-          <input type="file" id="itemImageCamera" accept="image/*" capture="environment" onchange="previewImage(this)" style="font-size:.75rem;margin-top:.25rem;">
-        </label>
+        <div>
+          <div style="font-size:.85rem;color:#e2e8f0;margin-bottom:.25rem;">ファイルから</div>
+          <input type="file" id="itemImageFile" accept="image/*" onchange="previewImage(this)" style="display:none;">
+          <button type="button" class="secondary outline" onclick="$('itemImageFile').click()" style="width:100%;font-size:.8rem;padding:.4rem;">ファイルを選択</button>
+        </div>
+        <div>
+          <div style="font-size:.85rem;color:#e2e8f0;margin-bottom:.25rem;">カメラから</div>
+          <input type="file" id="itemImageCamera" accept="image/*" capture="environment" onchange="previewImage(this)" style="display:none;">
+          <button type="button" class="secondary outline" onclick="$('itemImageCamera').click()" style="width:100%;font-size:.8rem;padding:.4rem;">カメラ起動</button>
+        </div>
       </div>
       <img id="imagePreview" class="hidden" style="max-height:120px;border-radius:.35rem;margin-bottom:.5rem;">
       <input type="hidden" id="itemImageData">
