@@ -11,7 +11,7 @@
   .hidden{display:none !important;}
   .db-badge{display:inline-flex;align-items:center;gap:.5rem;background:#1f2937;padding:.35rem .8rem;border-radius:999px;font-size:.9rem;}
   .db-badge .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;}
-  .item-card{border:1px solid #374151;border-radius:.5rem;padding:1rem;background:#111827;}
+  .item-card{border:1px solid #374151;border-radius:.5rem;padding:1rem;background:#111827;color:#f8fafc;}
   .item-card img{width:100%;height:140px;object-fit:cover;border-radius:.35rem;background:#1f2937;}
   .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
   .item-list .item-card{display:flex;gap:1rem;align-items:center;}
@@ -21,7 +21,8 @@
   .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
   .modal label{color:#e2e8f0;font-weight:500;}
   .modal input,.modal select,.modal textarea{background:#f8fafc;color:#1f2937;}
-  .modal h3{color:#f8fafc;margin-top:0;}
+  .modal h3{color:#f8fafc;}
+  .modal h3{margin-top:0;}
   .close-btn{position:absolute;top:.8rem;right:1rem;background:none;border:none;font-size:1.5rem;color:#9ca3af;cursor:pointer;}
   .db-screen{position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
   .db-screen h2{margin-bottom:1rem;color:#e2e8f0;}
@@ -32,7 +33,7 @@
   .db-select-card.active{border-color:#22c55e;background:#064e3b;}
   .db-select-card .db-name{font-weight:700;font-size:1.1rem;margin-bottom:.25rem;color:#f8fafc;}
   .db-select-card .db-meta{font-size:.8rem;color:#cbd5e1;}
-  .empty-state{text-align:center;padding:3rem 1rem;color:#9ca3af;}
+  .empty-state{text-align:center;padding:3rem 1rem;color:#e2e8f0;}
   .tag{display:inline-block;background:#1f2937;padding:.15rem .5rem;border-radius:.25rem;font-size:.75rem;margin-right:.25rem;}
   .action-btns{display:flex;gap:.5rem;flex-wrap:wrap;}
   .action-btns button{padding:.4rem .8rem;font-size:.8rem;}
@@ -98,7 +99,7 @@
   </div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-    <div id="resultCount" style="font-size:.9rem;color:#9ca3af;">0件</div>
+    <div id="resultCount" style="font-size:.9rem;color:#e2e8f0;">0件</div>
     <div style="display:flex;gap:.5rem;">
       <button class="secondary outline" onclick="setView('grid')" id="btnGrid" style="padding:.3rem .6rem;">□</button>
       <button class="secondary outline" onclick="setView('list')" id="btnList" style="padding:.3rem .6rem;">☰</button>
@@ -286,7 +287,7 @@ async function initDbScreen(){
 function renderDbSelector(){
   const grid = $('dbSelectGrid');
   if (!databases.length) {
-    grid.innerHTML = '<p style="color:#e2e8f0;">DBがありません。下のボタンから作成してください。</p>';
+    grid.innerHTML = '<p style="color:#94a3b8;">DBがありません。下のボタンから作成してください。</p>';
     return;
   }
   grid.innerHTML = databases.map(db => `
@@ -407,7 +408,7 @@ async function addUserFromManage(){
   if (!selectedManageDb) { toast('DBを選択してください'); return; }
   try {
     const res = await apiGet('addUser', { spreadsheetId: selectedManageDb.spreadsheetId, email });
-    if (!res.ok) throw new Error(res.error || '追加失敗');
+    if (!res.ok) throw new Error(res.error || '加失敗');
     toast('利用者を追加しました: ' + email);
     $('manageAddUserEmail').value = '';
     await refreshDbListForManage();
@@ -570,16 +571,16 @@ function renderItems(){
   container.className = viewMode === 'grid' ? 'item-grid' : 'item-list';
   container.innerHTML = filtered.map(it => `
     <div class="item-card">
-      ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:.8rem;">画像なし</div>`}
+      ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:.8rem;">画像なし</div>`}
       <div style="flex:1;">
-        <div style="font-weight:700;margin-bottom:.25rem;">${escapeHtml(it.name)}</div>
-        <div style="font-size:.8rem;color:#9ca3af;margin-bottom:.35rem;">
+        <div style="font-weight:700;margin-bottom:.25rem;color:#f8fafc;">${escapeHtml(it.name)}</div>
+        <div style="font-size:.8rem;color:#e2e8f0;margin-bottom:.35rem;">
           ${it.spec ? escapeHtml(it.spec)+' · ' : ''}${it.quantity || 0}個 · ${escapeHtml(it.location||'場所未設定')}
         </div>
-        <div style="font-size:.75rem;color:#6b7280;margin-bottom:.35rem;">
+        <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:.35rem;">
           ${it.store ? '購入:'+escapeHtml(it.store)+' · ' : ''}${it.price ? it.price+'円 · ' : ''}${it.obtained ? '購入:'+fmtDate(it.obtained) : ''}
         </div>
-        ${it.memo ? `<div style="font-size:.75rem;color:#9ca3af;margin-bottom:.35rem;">${escapeHtml(it.memo)}</div>` : ''}
+        ${it.memo ? `<div style="font-size:.75rem;color:#cbd5e1;margin-bottom:.35rem;">${escapeHtml(it.memo)}</div>` : ''}
         <div class="action-btns">
           <button class="secondary outline" onclick='editItem(${JSON.stringify(it).replace(/'/g,"\\'")})'>編集</button>
           <button class="danger outline" onclick="deleteItem('${it.id}')">削除</button>
