@@ -266,7 +266,16 @@ async function apiPost(action, data = {}) {
 
 /* ================= DB選択画面 ================= */
 async function initDbScreen(){
-  await refreshDbList();
+  try {
+    const res = await apiGet('list');
+    if (!res.ok) throw new Error(res.error || 'DB一覧取得失敗');
+    databases = res.databases || [];
+    renderDbSelector();
+  } catch (err) {
+    toast('DB一覧読み込みエラー: ' + err.message);
+    databases = [];
+    renderDbSelector();
+  }
   $('dbScreen').style.display = 'flex';
   hide('mainScreen');
 }
