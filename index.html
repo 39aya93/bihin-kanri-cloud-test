@@ -93,9 +93,9 @@
   </div>
 
   <div class="search-row">
-    <input type="search" id="searchInput" placeholder="名称・仕様・場・購入先・備考で検索" oninput="renderItems()">
-    <select id="filterLocation" onchange="renderItems()"><option value="">すべての場所</option></select>
-    <select id="filterStore" onchange="renderItems()"><option value="">すべての購入先</option></select>
+    <input type="search" id="searchInput" placeholder="名称・仕様・保管場所・購入先・備考で検索" oninput="renderItems()">
+    <select id="filterLocation" onchange="renderItems()"><option value="">保管場所</option></select>
+    <select id="filterStore" onchange="renderItems()"><option value="">購入先</option></select>
   </div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
@@ -549,8 +549,8 @@ function updateSelectOptions(){
   const stos = [...new Set([...(settings.stores||[]), ...items.map(x=>x.store).filter(Boolean)])];
   locSel.innerHTML = '<option value="">選択</option>' + locs.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
   storeSel.innerHTML = '<option value="">選択</option>' + stos.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-  floc.innerHTML = '<option value="">すべての場所</option>' + locs.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-  fsto.innerHTML = '<option value="">すべての購入先</option>' + stos.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  floc.innerHTML = '<option value="">保管場所</option>' + locs.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  fsto.innerHTML = '<option value="">購入先</option>' + stos.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
 }
 
 function renderItems(){
