@@ -12,24 +12,58 @@
   .db-badge{display:inline-flex;align-items:center;gap:.5rem;background:#1f2937;padding:.35rem .8rem;border-radius:999px;font-size:.9rem;}
   .db-badge .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;}
   .item-card{border:1px solid #374151;border-radius:.5rem;padding:1rem;background:#111827;color:#f8fafc;}
-  .item-card img{width:100%;height:140px;object-fit:cover;border-radius:.35rem;background:#1f2937;}
   .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
+  .item-grid .item-card img{width:100%;height:140px;object-fit:cover;border-radius:.35rem;background:#1f2937;}
+  
+  /* 画像ありリスト形式 */
   .item-list{display:flex;flex-direction:column;gap:.75rem;}
-  .item-list .item-card{display:flex;gap:1rem;align-items:flex-start;padding:1rem;}
-  .item-list .item-card img{width:120px;height:120px;object-fit:cover;border-radius:.35rem;flex-shrink:0;background:#1f2937;}
-  .item-list .item-card>div{flex:1;min-width:0;}
-  .item-list-noimg .item-card{display:flex;gap:1rem;align-items:center;padding:.75rem 1rem;}
-  .item-list-noimg .item-card img{display:none;}
-  .item-list-noimg .item-number{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#1f6feb;color:#fff;border-radius:50%;font-size:.85rem;font-weight:700;flex-shrink:0;}
-  .item-list-noimg .item-card>div{flex:1;}
+  .item-list > .item-card{display:flex;gap:1rem;align-items:flex-start;padding:1rem;}
+  .item-list > .item-card > img,
+  .item-list > .item-card > .img-placeholder{
+    width:120px !important;
+    height:120px !important;
+    object-fit:cover;
+    border-radius:.35rem;
+    flex-shrink:0;
+    background:#1f2937;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#94a3b8;
+    font-size:.75rem;
+  }
+  
+  /* 画像なしリスト形式（番号付き・コンパクト） */
+  .item-list-noimg{display:flex !important;flex-direction:column !important;gap:.5rem !important;}
+  .item-list-noimg > .item-card{
+    display:flex !important;
+    gap:.75rem !important;
+    align-items:flex-start !important;
+    padding:.75rem 1rem !important;
+  }
+  .item-list-noimg > .item-card > .item-number{
+    width:32px;
+    height:32px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#1f6feb;
+    color:#fff;
+    border-radius:50%;
+    font-size:.8rem;
+    font-weight:700;
+    flex-shrink:0;
+    margin-top:.15rem;
+  }
+  .item-list-noimg > .item-card > div{flex:1;min-width:0;}
   .list-summary{text-align:right;padding:.75rem 1rem;background:#1e293b;border:1px solid #374151;border-radius:.5rem;margin-top:.5rem;color:#e2e8f0;font-size:.9rem;}
+  
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:1rem;}
   .modal-overlay.open{display:flex !important;}
   .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
   .modal label{color:#e2e8f0;font-weight:500;}
   .modal input,.modal select,.modal textarea{background:#f8fafc;color:#1f2937;}
-  .modal h3{color:#f8fafc;}
-  .modal h3{margin-top:0;}
+  .modal h3{color:#f8fafc;margin-top:0;}
   .close-btn{position:absolute;top:.8rem;right:1rem;background:none;border:none;font-size:1.5rem;color:#9ca3af;cursor:pointer;}
   .db-screen{position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
   .db-screen h2{margin-bottom:1rem;color:#e2e8f0;}
@@ -223,13 +257,11 @@
 <div id="toast" class="toast"></div>
 
 <script>
-/* ================= 設定（config.js の CONFIG を参照） ================= */
 function getManagerUrl(){
   if (typeof CONFIG !== 'undefined' && CONFIG.MANAGER_URL) return CONFIG.MANAGER_URL;
   return '';
 }
 
-/* ================= 状態 ================= */
 let databases = [];
 let activeDb = null;
 let selectedManageDb = null;
@@ -237,7 +269,6 @@ let items = [];
 let viewMode = 'grid';
 let settings = {locations:[], stores:[]};
 
-/* ================= ユーティリティ ================= */
 function $(id){ return document.getElementById(id); }
 function show(id){ $(id).classList.remove('hidden'); }
 function hide(id){ $(id).classList.add('hidden'); }
@@ -252,7 +283,6 @@ function toQueryString(obj){
   return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
 }
 
-/* ================= API通信 ================= */
 async function apiGet(op, extra = {}) {
   const managerUrl = getManagerUrl();
   if (!managerUrl) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
@@ -276,7 +306,6 @@ async function apiPost(action, data = {}) {
   return res.json();
 }
 
-/* ================= DB選択画面 ================= */
 async function initDbScreen(){
   try {
     const res = await apiGet('list');
@@ -295,7 +324,7 @@ async function initDbScreen(){
 function renderDbSelector(){
   const grid = $('dbSelectGrid');
   if (!databases.length) {
-    grid.innerHTML = '<p style="color:#94a3b8;">DBがありません。下のボタンから作成してください。</p>';
+    grid.innerHTML = '<p style="color:#e2e8f0;">DBがありません。下のボタンから作成してください。</p>';
     return;
   }
   grid.innerHTML = databases.map(db => `
@@ -329,7 +358,6 @@ function updateCurrentDbDisplay(){
   }
 }
 
-/* ================= DB管理モーダル ================= */
 async function showDbManageModal(){
   await refreshDbListForManage();
   openModal('dbManageModal');
@@ -416,7 +444,7 @@ async function addUserFromManage(){
   if (!selectedManageDb) { toast('DBを選択してください'); return; }
   try {
     const res = await apiGet('addUser', { spreadsheetId: selectedManageDb.spreadsheetId, email });
-    if (!res.ok) throw new Error(res.error || '加失敗');
+    if (!res.ok) throw new Error(res.error || '追加失敗');
     toast('利用者を追加しました: ' + email);
     $('manageAddUserEmail').value = '';
     await refreshDbListForManage();
@@ -455,11 +483,10 @@ async function deleteSelectedDb(){
   }
 }
 
-/* ================= DB作成 ================= */
 async function createDb(){
   const name = $('newDbName').value.trim();
   const editorsRaw = $('newDbEditors').value.trim();
-  if (!name) { toast('DB名を入してください'); return; }
+  if (!name) { toast('DB名を入力してください'); return; }
   const editors = editorsRaw ? editorsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
   try {
     const res = await apiGet('create', { name, editors: editors.join(',') });
@@ -485,7 +512,6 @@ async function createDb(){
   }
 }
 
-/* ================= 備品CRUD ================= */
 async function loadCurrentDb(){
   if (!activeDb) { toast('DBが選択されていません'); return; }
   try {
@@ -547,7 +573,6 @@ async function deleteItem(id){
   }
 }
 
-/* ================= UIレンダリング ================= */
 function updateSelectOptions(){
   const locSel = $('itemLocation');
   const storeSel = $('itemStore');
@@ -562,6 +587,7 @@ function updateSelectOptions(){
 }
 
 function renderItems(){
+  console.log('renderItems viewMode:', viewMode, 'items:', items.length);
   const container = $('itemsContainer');
   const q = $('searchInput').value.trim().toLowerCase();
   const floc = $('filterLocation').value;
@@ -572,11 +598,66 @@ function renderItems(){
   });
   $('resultCount').textContent = filtered.length + '件 / 登録:' + items.length + '件';
   if (!filtered.length) {
-    container.className = viewMode === 'grid' ? 'item-grid' : 'item-list';
+    container.className = viewMode === 'grid' ? 'item-grid' : (viewMode === 'listNoImg' ? 'item-list-noimg' : 'item-list');
     container.innerHTML = '<div class="empty-state">該当する備品がありません</div>';
     return;
   }
-  container.className = viewMode === 'grid' ? 'item-grid' : 'item-list';
+
+  // 画像なしリスト形式（番号付き・コンパクト）
+  if (viewMode === 'listNoImg') {
+    console.log('Rendering listNoImg mode');
+    container.className = 'item-list-noimg';
+    let html = filtered.map((it, idx) => `
+      <div class="item-card">
+        <div class="item-number">${idx + 1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;margin-bottom:.15rem;color:#f8fafc;">${escapeHtml(it.name)}</div>
+          <div style="font-size:.8rem;color:#e2e8f0;">
+            ${it.spec ? escapeHtml(it.spec)+' · ' : ''}${it.quantity || 0}個 · ${escapeHtml(it.location||'場所未設定')}
+            ${it.store ? ' · 購入:'+escapeHtml(it.store) : ''}${it.price ? ' · '+it.price+'円' : ''}${it.obtained ? ' · 購入日:'+fmtDate(it.obtained) : ''}
+          </div>
+          ${it.memo ? `<div style="font-size:.75rem;color:#cbd5e1;margin-top:.15rem;">${escapeHtml(it.memo)}</div>` : ''}
+          <div class="action-btns" style="margin-top:.35rem;">
+            <button class="secondary outline" onclick='editItem(${JSON.stringify(it).replace(/'/g,"\'")})'>編集</button>
+            <button class="danger outline" onclick="deleteItem('${it.id}')">削除</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    html += `<div class="list-summary">合計 ${filtered.length} 件</div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  // 画像ありリスト形式
+  if (viewMode === 'list') {
+    console.log('Rendering list mode');
+    container.className = 'item-list';
+    container.innerHTML = filtered.map(it => `
+      <div class="item-card">
+        ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div class="img-placeholder">画像なし</div>`}
+        <div>
+          <div style="font-weight:700;margin-bottom:.25rem;color:#f8fafc;">${escapeHtml(it.name)}</div>
+          <div style="font-size:.8rem;color:#e2e8f0;margin-bottom:.35rem;">
+            ${it.spec ? escapeHtml(it.spec)+' · ' : ''}${it.quantity || 0}個 · ${escapeHtml(it.location||'場所未設定')}
+          </div>
+          <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:.35rem;">
+            ${it.store ? '購入:'+escapeHtml(it.store)+' · ' : ''}${it.price ? it.price+'円 · ' : ''}${it.obtained ? '購入:'+fmtDate(it.obtained) : ''}
+          </div>
+          ${it.memo ? `<div style="font-size:.75rem;color:#cbd5e1;margin-bottom:.35rem;">${escapeHtml(it.memo)}</div>` : ''}
+          <div class="action-btns">
+            <button class="secondary outline" onclick='editItem(${JSON.stringify(it).replace(/'/g,"\'")})'>編集</button>
+            <button class="danger outline" onclick="deleteItem('${it.id}')">削除</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  // カード形式（デフォルト）
+  console.log('Rendering grid mode');
+  container.className = 'item-grid';
   container.innerHTML = filtered.map(it => `
     <div class="item-card">
       ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:.8rem;">画像なし</div>`}
@@ -590,7 +671,7 @@ function renderItems(){
         </div>
         ${it.memo ? `<div style="font-size:.75rem;color:#cbd5e1;margin-bottom:.35rem;">${escapeHtml(it.memo)}</div>` : ''}
         <div class="action-btns">
-          <button class="secondary outline" onclick='editItem(${JSON.stringify(it).replace(/'/g,"\\'")})'>編集</button>
+          <button class="secondary outline" onclick='editItem(${JSON.stringify(it).replace(/'/g,"\'")})'>編集</button>
           <button class="danger outline" onclick="deleteItem('${it.id}')">削除</button>
         </div>
       </div>
@@ -599,6 +680,7 @@ function renderItems(){
 }
 
 function setView(mode){
+  console.log('setView called:', mode);
   viewMode = mode;
   renderItems();
 }
@@ -608,7 +690,6 @@ function escapeHtml(text){
   return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/* ================= モーダル制御 ================= */
 function showItemModal(){ $('itemModalTitle').textContent = '+ 備品を登録'; $('itemForm').reset(); $('itemId').value=''; $('imagePreview').classList.add('hidden'); $('itemImageData').value=''; $('itemObtained').value=today(); openModal('itemModal'); }
 function closeItemModal(){ closeModal('itemModal'); }
 function showNewDbModal(){ openModal('newDbModal'); }
@@ -652,7 +733,6 @@ function clearCache(){
   setTimeout(()=>location.reload(), 800);
 }
 
-/* ================= 初期化 ================= */
 window.addEventListener('DOMContentLoaded', () => {
   if (!getManagerUrl()) {
     toast('config.js の MANAGER_URL を設定してください');
