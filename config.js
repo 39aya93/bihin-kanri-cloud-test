@@ -2,5 +2,5 @@
  * 備品管理アプリの接続設定
  */
 const CONFIG = {
-  MANAGER_URL: 'https://script.google.com/macros/s/AKfycbzCzBI6Nl7MLNcmTN2ANMXgrKrO5mt9H7tyhxMPzbo93CZcYzKXf5OLvsUKl0KIYlP1/exec'
+  MANAGER_URL: 'https://script.google.com/macros/s/AKfycbz1ydli1-QMZuoi4Wc1glt2VbmKeA3rpBqWsHziZNaHlX6Y2eKnRsc_riWLoS2vHv4/exec'
 };
