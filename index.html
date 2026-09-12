@@ -21,8 +21,7 @@
   .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
   .modal label{color:#e2e8f0;font-weight:500;}
   .modal input,.modal select,.modal textarea{background:#f8fafc;color:#1f2937;}
-  .modal h3{color:#f8fafc;}
-  .modal h3{margin-top:0;}
+  .modal h3{color:#f8fafc;margin-top:0;}
   .close-btn{position:absolute;top:.8rem;right:1rem;background:none;border:none;font-size:1.5rem;color:#9ca3af;cursor:pointer;}
   .db-screen{position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
   .db-screen h2{margin-bottom:1rem;color:#e2e8f0;}
@@ -287,7 +286,7 @@ async function initDbScreen(){
 function renderDbSelector(){
   const grid = $('dbSelectGrid');
   if (!databases.length) {
-    grid.innerHTML = '<p style="color:#94a3b8;">DBがありません。下のボタンから作成してください。</p>';
+    grid.innerHTML = '<p style="color:#e2e8f0;">DBがありません。下のボタンから作成してください。</p>';
     return;
   }
   grid.innerHTML = databases.map(db => `
@@ -408,7 +407,7 @@ async function addUserFromManage(){
   if (!selectedManageDb) { toast('DBを選択してください'); return; }
   try {
     const res = await apiGet('addUser', { spreadsheetId: selectedManageDb.spreadsheetId, email });
-    if (!res.ok) throw new Error(res.error || '加失敗');
+    if (!res.ok) throw new Error(res.error || '追加失敗');
     toast('利用者を追加しました: ' + email);
     $('manageAddUserEmail').value = '';
     await refreshDbListForManage();
