@@ -193,7 +193,15 @@
         </label>
         <label>価格（円）<input type="number" id="itemPrice" min="0"></label>
       </div>
-      <label>画像<input type="file" id="itemImage" accept="image/*" onchange="previewImage(this)"></label>
+      <label style="color:#e2e8f0;font-weight:500;">画像</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.5rem;">
+        <label style="margin-bottom:0;font-size:.85rem;color:#e2e8f0;">ファイルから
+          <input type="file" id="itemImageFile" accept="image/*" onchange="previewImage(this)" style="font-size:.75rem;margin-top:.25rem;">
+        </label>
+        <label style="margin-bottom:0;font-size:.85rem;color:#e2e8f0;">カメラで撮影
+          <input type="file" id="itemImageCamera" accept="image/*" capture="environment" onchange="previewImage(this)" style="font-size:.75rem;margin-top:.25rem;">
+        </label>
+      </div>
       <img id="imagePreview" class="hidden" style="max-height:120px;border-radius:.35rem;margin-bottom:.5rem;">
       <input type="hidden" id="itemImageData">
       <label>備考<textarea id="itemMemo" rows="2"></textarea></label>
