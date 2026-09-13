@@ -73,6 +73,27 @@
   .item-list-noimg > .item-card > div{flex:1;min-width:0;}
   .list-summary{text-align:right;padding:.75rem 1rem;background:#1e293b;border:1px solid #374151;border-radius:.5rem;margin-top:.5rem;color:#e2e8f0;font-size:.9rem;}
 
+  /* 一覧表示エリアのスクロール */
+  .items-scroll-area{
+    max-height: calc(100vh - 340px);
+    overflow-y: auto;
+    padding-right: .25rem;
+  }
+  .items-scroll-area::-webkit-scrollbar{
+    width: 6px;
+  }
+  .items-scroll-area::-webkit-scrollbar-track{
+    background: #1f2937;
+    border-radius: 3px;
+  }
+  .items-scroll-area::-webkit-scrollbar-thumb{
+    background: #4b5563;
+    border-radius: 3px;
+  }
+  .items-scroll-area::-webkit-scrollbar-thumb:hover{
+    background: #6b7280;
+  }
+
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:1rem;}
   .modal-overlay.open{display:flex !important;}
   .modal{background:#1e293b;padding:1.5rem;border-radius:.75rem;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;position:relative;border:2px solid #4b5563;}
@@ -111,6 +132,15 @@
   .user-list{font-size:.85rem;color:#f8fafc;max-height:120px;overflow-y:auto;}
   .user-list-item{padding:.2rem 0;border-bottom:1px solid #334155;}
   .compress-info{font-size:.8rem;color:#94a3b8;margin-top:.25rem;}
+
+  /* DB選択画面のキャッシュクリアボタン */
+  .db-screen-actions{
+    margin-top: 1.5rem;
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 </style>
 <script src="config.js"></script>
 </head>
@@ -123,6 +153,9 @@
   <div id="dbSelectGrid" class="db-select-grid"></div>
   <div style="margin-top:2rem;">
     <button class="secondary outline" onclick="showNewDbModal()">+ 新しいDBを作成</button>
+  </div>
+  <div class="db-screen-actions">
+    <button class="secondary outline" onclick="clearCache()">キャッシュをクリア</button>
   </div>
 </div>
 
@@ -164,7 +197,7 @@
     </div>
   </div>
 
-  <div id="itemsContainer" class="item-grid"></div>
+  <div id="itemsContainer" class="item-grid items-scroll-area"></div>
 
   <div style="margin-top:2rem;">
     <button class="secondary outline" onclick="clearCache()">キャッシュをクリア</button>
@@ -194,7 +227,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
         <label>購入先
           <select id="itemStore"><option value="">選択</option></select>
-          <input id="itemStoreCustom" placeholder="または新しい購入先" style="margin-top:.3rem;">
+          <input id="itemStoreCustom" placeholder="または新しい購入" style="margin-top:.3rem;">
         </label>
         <label>価格（円）<input type="number" id="itemPrice" min="0"></label>
       </div>
@@ -314,7 +347,7 @@ function toQueryString(obj){
 
 async function apiGet(op, extra = {}) {
   const managerUrl = getManagerUrl();
-  if (!managerUrl) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
+  if (!managerUrl) throw new Error('MANAGER_URL設定されていません。config.jsを確認してください。');
   const qs = toQueryString({op, ...extra});
   const url = managerUrl + (managerUrl.includes('?') ? '&' : '?') + qs;
   const res = await fetch(url, {method:'GET'});
@@ -378,7 +411,6 @@ async function previewImage(input) {
     const originalMb = (file.size / 1024 / 1024).toFixed(2);
     const compressed = await resizeImage(file, 640, 640, 0.5);
 
-    // Base64文字列のサイズを概算（data:～, 以降の長さ * 0.75バイト）
     const base64Len = compressed.length - compressed.indexOf(',') - 1;
     const compressedMb = ((base64Len * 0.75) / 1024 / 1024).toFixed(2);
 
@@ -401,7 +433,7 @@ async function initDbScreen(){
     databases = res.databases || [];
     renderDbSelector();
   } catch (err) {
-    toast('DB一覧読み込みエラー: ' + err.message);
+    toast('DB覧読み込みエラー: ' + err.message);
     databases = [];
     renderDbSelector();
   }
@@ -686,7 +718,7 @@ function renderItems(){
   });
   $('resultCount').textContent = filtered.length + '件 / 登録:' + items.length + '件';
   if (!filtered.length) {
-    container.className = viewMode === 'grid' ? 'item-grid' : (viewMode === 'listNoImg' ? 'item-list-noimg' : 'item-list');
+    container.className = 'item-grid items-scroll-area';
     container.innerHTML = '<div class="empty-state">該当する備品がありません</div>';
     return;
   }
@@ -694,7 +726,7 @@ function renderItems(){
   // 画像なしリスト形式（番号付き・コンパクト）
   if (viewMode === 'listNoImg') {
     console.log('Rendering listNoImg mode');
-    container.className = 'item-list-noimg';
+    container.className = 'item-list-noimg items-scroll-area';
     let html = filtered.map((it, idx) => `
       <div class="item-card">
         <div class="item-number">${idx + 1}</div>
@@ -720,7 +752,7 @@ function renderItems(){
   // 画像ありリスト形式
   if (viewMode === 'list') {
     console.log('Rendering list mode');
-    container.className = 'item-list';
+    container.className = 'item-list items-scroll-area';
     container.innerHTML = filtered.map(it => `
       <div class="item-card">
         ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div class="img-placeholder">画像なし</div>`}
@@ -745,7 +777,7 @@ function renderItems(){
 
   // カード形式（デフォルト）
   console.log('Rendering grid mode');
-  container.className = 'item-grid';
+  container.className = 'item-grid items-scroll-area';
   container.innerHTML = filtered.map(it => `
     <div class="item-card">
       ${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : `<div style="width:100%;height:140px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:.8rem;">画像なし</div>`}
