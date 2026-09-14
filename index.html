@@ -347,11 +347,16 @@ function toQueryString(obj){
 
 async function apiGet(op, extra = {}) {
   const managerUrl = getManagerUrl();
-  if (!managerUrl) throw new Error('MANAGER_URL設定されていません。config.jsを確認してください。');
+  if (!managerUrl) throw new Error('MANAGER_URLが設定されていません。config.jsを確認してください。');
   const qs = toQueryString({op, ...extra});
   const url = managerUrl + (managerUrl.includes('?') ? '&' : '?') + qs;
-  const res = await fetch(url, {method:'GET'});
-  return res.json();
+  const res = await fetch(url, {method:'GET', cache:'no-store'});
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error('サーバーがHTMLエラーページを返しました。再デプロイまたは権限を確認してください。');
+  }
 }
 
 async function apiPost(action, data = {}) {
@@ -363,9 +368,15 @@ async function apiPost(action, data = {}) {
   const res = await fetch(managerUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body
+    body,
+    cache: 'no-store'
   });
-  return res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error('サーバーがHTMLエラーページを返しました。再デプロイまたは権限を確認してください。');
+  }
 }
 
 /* ============================================================
@@ -847,6 +858,15 @@ function editItem(it){
 
 function clearCache(){
   localStorage.clear();
+  // Service Worker のキャッシュもクリア
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
+    if ('caches' in window) {
+      caches.keys().then(names => names.forEach(n => caches.delete(n)));
+    }
+  }
   toast('キャッシュをクリアしました');
   setTimeout(()=>location.reload(), 800);
 }
