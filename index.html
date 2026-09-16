@@ -622,7 +622,7 @@ async function createDb(){
   try {
     const res = await apiGet('create', { name, editors: editors.join(',') });
     if (!res.ok) throw new Error(res.error || '作成失敗');
-    toast('DBを作成ました: ' + name);
+    toast('DBを作成しました: ' + name);
     closeNewDbModal();
     $('newDbForm').reset();
     await refreshDbListForManage();
@@ -630,13 +630,12 @@ async function createDb(){
       activeDb = res.database;
       localStorage.setItem('lastDbId', res.database.spreadsheetId);
       updateCurrentDbDisplay();
-      if (!$('mainScreen').classList.contains('hidden')) {
-        items = [];
-        renderItems();
-      } else {
-        $('dbScreen').style.display = 'none';
-        show('mainScreen');
-      }
+      // 必ず新しいDBの画面に切り替えてデータを読み込む
+      $('dbScreen').style.display = 'none';
+      show('mainScreen');
+      items = [];
+      renderItems();
+      await loadCurrentDb();
     }
   } catch (err) {
     toast('新しいDBの作成に失敗しました。\n' + err.message);
