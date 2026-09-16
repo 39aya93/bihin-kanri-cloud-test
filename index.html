@@ -589,17 +589,32 @@ async function addUserFromManage(){
 async function deleteSelectedDb(){
   if (!selectedManageDb) { toast('DBを選択してください'); return; }
   if (!confirm('「' + selectedManageDb.name + '」を削除しますか？スプレッドシートもゴミ箱に移動します。')) return;
+
+  const wasActiveDb = activeDb && activeDb.spreadsheetId === selectedManageDb.spreadsheetId;
+  const deletedName = selectedManageDb.name;
+
   try {
     const res = await apiGet('delete', { spreadsheetId: selectedManageDb.spreadsheetId });
-    if (!res.ok) throw new Error(res.error || '削除失');
-    toast('DBを削除しました');
-    if (activeDb && activeDb.spreadsheetId === selectedManageDb.spreadsheetId) {
+    if (!res.ok) throw new Error(res.error || '削除失敗');
+    toast('DBを削除しました: ' + deletedName);
+
+    // 削除したDBが開いていたDBなら、メイン画面をクリアしてDB選択画面に戻る
+    if (wasActiveDb) {
       activeDb = null;
       items = [];
       localStorage.removeItem('lastDbId');
       updateCurrentDbDisplay();
       renderItems();
+      selectedManageDb = null;
+      closeDbManageModal();
+      // DB選択画面を表示
+      $('dbScreen').style.display = 'flex';
+      hide('mainScreen');
+      await initDbScreen();
+      return;
     }
+
+    // 開いていないDBを削除した場合は、モーダル内の選択をクリアしてリストを更新
     selectedManageDb = null;
     $('selectedDbName').textContent = 'DB未選択';
     $('selectedDbId').textContent = '';
